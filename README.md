@@ -1,6 +1,6 @@
-# LeetCode DSA Tracker with AI Mentor
+# Leetcode DSA Tracker with AI Mentor
 
-> A local-first, single-user web application for tracking LeetCode DSA practice, featuring an AI mentor powered by the Google Gemini API (free tier).
+> A local-first, single-user web application for tracking Leetcode DSA practice, featuring an AI mentor powered by the Google Gemini API (free tier).
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue.svg)](https://www.typescriptlang.org/)
 [![React 18](https://img.shields.io/badge/React-18-61dafb.svg)](https://react.dev/)
@@ -87,10 +87,10 @@ The application calls Google's Generative Language API directly from your browse
 3. In the left navigation or top bar, click **"Get API key"** (or **"Create API key"**).
 4. Click **"Create API key in new project"** (or choose an existing Google Cloud project).
 5. Copy your newly created API key string.
-6. Open **LeetCode Tracker**, navigate to **Settings** (`/settings` or click the gear icon in the top header).
+6. Open **Leetcode Tracker**, navigate to **Settings** (`/settings` or click the gear icon in the top header).
 7. Paste the key into the **Google Gemini API Key** input.
 8. Click **"Test connection"**. The app executes a minimal ping to verify connectivity.
-9. The **Active Gemini Model** dropdown will dynamically populate with models supporting `generateContent` (e.g., `gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-2.5-flash`). Flash-class models are selected by default to maximize free-tier limits.
+9. The **Active Gemini Model** dropdown will dynamically populate with models supporting `generateContent` (e.g., `gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-flash-lite-latest`). Flash-class models are selected by default to maximize free-tier limits.
 
 ---
 
@@ -107,7 +107,7 @@ The application calls Google's Generative Language API directly from your browse
 ## 5. Data Durability, Backups & Portability
 
 ### IndexedDB Storage
-Unlike `localStorage` (which is synchronous, blocks the main thread, and is capped at ~5MB), LeetCode Tracker uses **IndexedDB** via **Dexie.js**. This enables storing thousands of code attempts, comprehensive markdown notes, and AI critique history without hitting storage walls.
+Unlike `localStorage` (which is synchronous, blocks the main thread, and is capped at ~5MB), Leetcode Tracker uses **IndexedDB** via **Dexie.js**. This enables storing thousands of code attempts, comprehensive markdown notes, and AI critique history without hitting storage walls.
 
 ### Backups (Export & Import)
 Navigate to **Settings** (`/settings`) to manage your data:
@@ -125,7 +125,7 @@ Navigate to **Settings** (`/settings`) to manage your data:
 You can seed realistic data directly from the application UI without manual entry:
 1. Navigate to **Settings** (`/settings`).
 2. Scroll to the **Demo & Sample Data** section:
-   - **Seed 20 sample problems:** Populates realistic LeetCode questions (Two Sum, 3Sum, LRU Cache, Merge Intervals, etc.) complete with past code attempts, line diffs, code reviews, markdown notes, and mentor hints.
+   - **Seed 20 sample problems:** Populates realistic Leetcode questions (Two Sum, 3Sum, LRU Cache, Merge Intervals, etc.) complete with past code attempts, line diffs, code reviews, markdown notes, and mentor hints.
    - **Seed 2,000 benchmark problems:** Populates a high-volume dataset to test search debounce (<100ms), multi-facet filtering, and table pagination.
 3. To clear all data, scroll down to the **Danger Zone** and type `DELETE`.
 

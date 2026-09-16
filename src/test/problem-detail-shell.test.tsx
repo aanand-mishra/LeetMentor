@@ -50,7 +50,7 @@ describe('Phase 5 — Problem Detail Page Shell & Hash Routing', () => {
     });
 
     // Check external link
-    const leetcodeLink = screen.getByTitle('Open on LeetCode (opens in new tab)');
+    const leetcodeLink = screen.getByTitle('Open on Leetcode (opens in new tab)');
     expect(leetcodeLink).toHaveAttribute('href', 'https://leetcode.com/problems/two-sum/');
     expect(leetcodeLink).toHaveAttribute('target', '_blank');
     expect(leetcodeLink).toHaveAttribute('rel', 'noopener noreferrer');
@@ -176,6 +176,65 @@ describe('Phase 5 — Problem Detail Page Shell & Hash Routing', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Submit Attempt/i)).toBeInTheDocument();
+    });
+  });
+
+  it('allows editing Time Spent directly in Session Information on the Overview tab', async () => {
+    const user = userEvent.setup();
+    const problem = await problemsRepo.create({
+      number: 75,
+      title: 'Sort Colors',
+      url: null,
+      statement: 'Sort 0s, 1s, and 2s in-place',
+      difficulty: 'Medium',
+      topics: ['Array', 'Two Pointers'],
+      patterns: ['Dutch National Flag'],
+      status: 'Solved',
+      confidence: 4,
+      timeSpentMinutes: null,
+      hintsUsed: 0,
+      starred: false,
+      userTimeComplexity: null,
+      userSpaceComplexity: null,
+      notes: '',
+      language: 'python',
+      dateFirstAttempt: new Date().toISOString(),
+      dateSolved: new Date().toISOString(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={[`/problem/${problem.id}#overview`]}>
+        <ToastProvider>
+          <Routes>
+            <Route path="/problem/:id" element={<ProblemDetailPage />} />
+          </Routes>
+        </ToastProvider>
+      </MemoryRouter>
+    );
+
+    // Initial state shows — for Time Spent
+    await waitFor(() => {
+      expect(screen.getByText('Session Information')).toBeInTheDocument();
+    });
+
+    // Click edit button
+    const editTimeBtn = screen.getByRole('button', { name: /Edit time spent/i });
+    await user.click(editTimeBtn);
+
+    // Input field appears
+    const input = screen.getByLabelText(/Edit time spent in minutes/i);
+    expect(input).toBeInTheDocument();
+
+    // Type 45 and click save
+    await user.type(input, '45');
+    const saveBtn = screen.getByRole('button', { name: /Save time spent/i });
+    await user.click(saveBtn);
+
+    // Displays 45 mins and persists to IndexedDB
+    await waitFor(async () => {
+      expect(screen.getByText('45 mins')).toBeInTheDocument();
+      const stored = await problemsRepo.getById(problem.id);
+      expect(stored?.timeSpentMinutes).toBe(45);
     });
   });
 });

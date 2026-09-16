@@ -31,7 +31,7 @@ export async function requestCodeReview(
     );
   }
 
-  const activeModel = settings.model || 'gemini-2.5-flash';
+  const activeModel = settings.model || 'gemini-flash-lite-latest';
   const userPayload = buildCodeReviewPayload(problem, attempt, previousAttempt);
 
   const rawReview = await dispatchGeminiRequest<Omit<CodeReview, 'model' | 'createdAt'>>({
@@ -82,27 +82,59 @@ export async function requestMentorHint(
     );
   }
 
-  const activeModel = settings.model || 'gemini-2.5-flash';
+  let activeModel = settings.model || 'gemini-flash-lite-latest';
   const lang = problem.language || settings.defaultLanguage || 'Python';
   const systemInstruction = buildMentorSystemInstruction(level, lang);
   const userPayload = buildMentorPayload(problem, latestAttempt);
 
-  const markdownContent = await dispatchGeminiRequest<string>({
-    apiKey: settings.geminiApiKey,
-    model: activeModel,
-    systemInstruction,
-    userPrompt: userPayload,
-    temperature: settings.temperature ?? 0.4,
-    // responseMimeType and responseSchema omitted intentionally per §7.1
-    onQueueUpdate,
-  });
+  let markdownContent: string;
+  let usedModel = activeModel;
+
+  try {
+    markdownContent = await dispatchGeminiRequest<string>({
+      apiKey: settings.geminiApiKey,
+      model: activeModel,
+      systemInstruction,
+      userPrompt: userPayload,
+      temperature: settings.temperature ?? 0.4,
+      onQueueUpdate,
+    });
+  } catch (err: unknown) {
+    const is503 =
+      err instanceof GeminiError &&
+      (err.statusCode === 503 ||
+        err.code === 'UNAVAILABLE' ||
+        err.message.includes('503') ||
+        err.message.includes('No capacity'));
+
+    if (is503 && activeModel !== 'gemini-1.5-flash') {
+      console.warn(`Model ${activeModel} out of capacity (503). Retrying with gemini-1.5-flash...`);
+      try {
+        usedModel = 'gemini-1.5-flash';
+        markdownContent = await dispatchGeminiRequest<string>({
+          apiKey: settings.geminiApiKey,
+          model: usedModel,
+          systemInstruction,
+          userPrompt: userPayload,
+          temperature: settings.temperature ?? 0.4,
+          onQueueUpdate,
+        });
+        // Update user setting to prevent repeated 503 errors
+        await settingsRepo.update({ model: usedModel }).catch(() => {});
+      } catch (fallbackErr) {
+        throw fallbackErr;
+      }
+    } else {
+      throw err;
+    }
+  }
 
   // Track daily usage locally (FR-8.5)
   await settingsRepo.incrementDailyRequestCount().catch(console.error);
 
   return {
     content: markdownContent,
-    model: activeModel,
+    model: usedModel,
   };
 }
 
@@ -125,7 +157,7 @@ export async function requestNotesReview(
     );
   }
 
-  const activeModel = settings.model || 'gemini-2.5-flash';
+  const activeModel = settings.model || 'gemini-flash-lite-latest';
   const userPayload = buildNotesReviewPayload(problem, notes, attemptCount);
 
   const rawResult = await dispatchGeminiRequest<Omit<NoteReview, 'id' | 'problemId' | 'notesSnapshot' | 'model' | 'createdAt'>>({

@@ -99,8 +99,8 @@ export const ProblemDetailHeader: React.FC<Props> = ({
     onProblemUpdated();
     toast.success('Marked as Solved! 🎉');
 
-    // Prompt for confidence rating modal (FR-7.3)
-    if (onOpenConfidenceModal && !problem.confidence) {
+    // Prompt for solved completion modal (time spent + confidence)
+    if (onOpenConfidenceModal) {
       onOpenConfidenceModal();
     }
   };
@@ -133,15 +133,15 @@ export const ProblemDetailHeader: React.FC<Props> = ({
                 {problem.title}
               </h1>
 
-              {/* External LeetCode Link */}
+              {/* External Leetcode Link */}
               {problem.url && (
                 <a
                   href={problem.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-1"
-                  title="Open on LeetCode (opens in new tab)"
-                  aria-label="Open on LeetCode"
+                  title="Open on Leetcode (opens in new tab)"
+                  aria-label="Open on Leetcode"
                 >
                   <ExternalLink className="w-4 h-4" />
                 </a>
@@ -157,11 +157,10 @@ export const ProblemDetailHeader: React.FC<Props> = ({
                 aria-label={problem.starred ? 'Unstar problem' : 'Star problem'}
               >
                 <Star
-                  className={`w-5 h-5 ${
-                    problem.starred
+                  className={`w-5 h-5 ${problem.starred
                       ? 'text-amber-500 fill-amber-500'
                       : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'
-                  }`}
+                    }`}
                 />
               </button>
             </div>

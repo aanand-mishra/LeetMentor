@@ -30,12 +30,17 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const addToast = useCallback(
     (message: string, type: ToastType = 'info') => {
-      const id = generateUuid();
-      setToasts((prev) => [...prev, { id, type, message }]);
-
-      setTimeout(() => {
-        removeToast(id);
-      }, 4500);
+      setToasts((prev) => {
+        // If an identical message and type is already active, don't stack duplicate toast
+        if (prev.some((t) => t.message === message && t.type === type)) {
+          return prev;
+        }
+        const id = generateUuid();
+        setTimeout(() => {
+          removeToast(id);
+        }, 4500);
+        return [...prev, { id, type, message }];
+      });
     },
     [removeToast]
   );

@@ -75,6 +75,17 @@ export const ProblemDetailPage: React.FC = () => {
     // Dexie useLiveQuery automatically updates state
   }, []);
 
+  const handleSaveTimeSpent = async (minutes: number) => {
+    if (!id) return;
+    try {
+      await problemsRepo.update(id, { timeSpentMinutes: minutes });
+      handleProblemUpdated();
+      toast.success(`Logged ${minutes} min time spent.`);
+    } catch (err) {
+      console.error('Failed to save time spent:', err);
+    }
+  };
+
   const handleSelectConfidence = async (conf: 1 | 2 | 3 | 4 | 5) => {
     if (!id) return;
     try {
@@ -228,9 +239,11 @@ export const ProblemDetailPage: React.FC = () => {
         )}
       </div>
 
-      {/* Prompt Confidence Modal (FR-7.3) */}
+      {/* Solved Completion Modal: Time Spent (Step 1) -> Confidence (Step 2) */}
       <ConfidenceRatingModal
         isOpen={confidenceModalOpen}
+        initialTimeSpent={problem.timeSpentMinutes}
+        onSaveTimeSpent={handleSaveTimeSpent}
         onSelectConfidence={handleSelectConfidence}
         onSkip={() => setConfidenceModalOpen(false)}
       />

@@ -106,7 +106,7 @@ describe('FR-1 — Problem CRUD Acceptance Criteria', () => {
     );
 
     const user = userEvent.setup();
-    const numberInput = screen.getByPlaceholderText(/e\.g\. 1/i);
+    const numberInput = screen.getByLabelText(/Leetcode Number/i);
     await user.type(numberInput, '1');
 
     await waitFor(() => {
@@ -153,5 +153,33 @@ describe('FR-1 — Problem CRUD Acceptance Criteria', () => {
     // Verify cascading deletion
     expect(await problemsRepo.getById(problem.id)).toBeUndefined();
     expect(await db.attempts.where('problemId').equals(problem.id).count()).toBe(0);
+  });
+
+  it('hides time spent field when status is not Solved, and reveals it when status is Solved', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <BrowserRouter>
+        <ToastProvider>
+          <ProblemForm onSubmit={async () => {}} />
+        </ToastProvider>
+      </BrowserRouter>
+    );
+
+    // Default status is 'Not Started', so Time Spent input should NOT be present
+    expect(screen.queryByPlaceholderText(/e\.g\. 25/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Time Spent \(minutes\)/i)).not.toBeInTheDocument();
+
+    // Change status to 'Solved'
+    const statusSelect = screen.getByLabelText(/^Status/i);
+    await user.selectOptions(statusSelect, 'Solved');
+
+    // Time Spent input should now be visible
+    expect(screen.getByPlaceholderText(/e\.g\. 25/i)).toBeInTheDocument();
+    expect(screen.getByText(/Time Spent \(minutes\)/i)).toBeInTheDocument();
+
+    // Change status back to 'In Progress'
+    await user.selectOptions(statusSelect, 'In Progress');
+    expect(screen.queryByPlaceholderText(/e\.g\. 25/i)).not.toBeInTheDocument();
   });
 });

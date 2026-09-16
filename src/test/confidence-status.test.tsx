@@ -6,6 +6,7 @@ import { ConfidenceDots } from '../components/common/ConfidenceDots';
 import { problemsRepo, attemptsRepo, mentorRepo, clearAllLocalData, db } from '../db';
 import { ToastProvider } from '../context/ToastContext';
 import { BrowserRouter } from 'react-router-dom';
+import { ConfidenceRatingModal } from '../components/problem/ConfidenceRatingModal';
 import type { Problem } from '../types';
 
 describe('FR-7 — Confidence Rating and Status Logic Acceptance Tests', () => {
@@ -238,5 +239,94 @@ describe('FR-7 — Confidence Rating and Status Logic Acceptance Tests', () => {
       expect(stored?.dateSolved).toBeNull();
       expect(stored?.confidence).toBe(4); // Retained
     });
+  });
+
+  it('ConfidenceRatingModal asks for time spent in Step 1 before rating confidence in Step 2', async () => {
+    const user = userEvent.setup();
+    const onSaveTimeSpent = vi.fn();
+    const onSelectConfidence = vi.fn();
+    const onSkip = vi.fn();
+
+    render(
+      <ToastProvider>
+        <ConfidenceRatingModal
+          isOpen={true}
+          initialTimeSpent={null}
+          onSaveTimeSpent={onSaveTimeSpent}
+          onSelectConfidence={onSelectConfidence}
+          onSkip={onSkip}
+        />
+      </ToastProvider>
+    );
+
+    // Step 1: Time Spent should be active first
+    expect(screen.getByText(/Step 1 of 2: Time Spent/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Time Spent \(minutes\)/i)).toBeInTheDocument();
+
+    // Type 35 minutes into input
+    const timeInput = screen.getByLabelText(/Time Spent \(minutes\)/i);
+    await user.type(timeInput, '35');
+
+    // Click "Next: Rate Confidence"
+    const nextBtn = screen.getByRole('button', { name: /Next: Rate Confidence/i });
+    await user.click(nextBtn);
+
+    expect(onSaveTimeSpent).toHaveBeenCalledWith(35);
+
+    // Step 2: Confidence rating should now be visible
+    expect(screen.getByText(/Step 2 of 2: Confidence/i)).toBeInTheDocument();
+    expect(screen.getByText(/Solved! Rate Your Confidence/i)).toBeInTheDocument();
+    expect(screen.getByText(/Solid/i)).toBeInTheDocument();
+
+    // Select confidence 4 (Solid)
+    const solidOption = screen.getByRole('button', { name: /Solid/i });
+    await user.click(solidOption);
+
+    // Confirm rating
+    const setRatingBtn = screen.getByRole('button', { name: /Set Rating/i });
+    await user.click(setRatingBtn);
+
+    expect(onSelectConfidence).toHaveBeenCalledWith(4);
+  });
+
+  it('updating initialTimeSpent while modal is open does not reset step back to time spent', async () => {
+    const user = userEvent.setup();
+    const onSaveTimeSpent = vi.fn();
+    const onSelectConfidence = vi.fn();
+
+    const { rerender } = render(
+      <ToastProvider>
+        <ConfidenceRatingModal
+          isOpen={true}
+          initialTimeSpent={null}
+          onSaveTimeSpent={onSaveTimeSpent}
+          onSelectConfidence={onSelectConfidence}
+          onSkip={vi.fn()}
+        />
+      </ToastProvider>
+    );
+
+    // Advance to Step 2
+    const nextBtn = screen.getByRole('button', { name: /Next: Rate Confidence/i });
+    await user.click(nextBtn);
+
+    expect(screen.getByText(/Step 2 of 2: Confidence/i)).toBeInTheDocument();
+
+    // Re-render parent with new initialTimeSpent (simulating Dexie live query updating after saving time)
+    rerender(
+      <ToastProvider>
+        <ConfidenceRatingModal
+          isOpen={true}
+          initialTimeSpent={15}
+          onSaveTimeSpent={onSaveTimeSpent}
+          onSelectConfidence={onSelectConfidence}
+          onSkip={vi.fn()}
+        />
+      </ToastProvider>
+    );
+
+    // It MUST remain on Step 2, not be kicked back to Step 1
+    expect(screen.getByText(/Step 2 of 2: Confidence/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Step 1 of 2: Time Spent/i)).not.toBeInTheDocument();
   });
 });

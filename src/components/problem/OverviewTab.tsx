@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
-import { ChevronDown, ChevronUp, Clock, Calendar, CheckCircle, Code, Lightbulb, BookOpen } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Calendar,
+  CheckCircle,
+  Code,
+  Lightbulb,
+  BookOpen,
+  Edit2,
+  Check,
+  X,
+} from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import type { Problem, Attempt, MentorMessage, NoteReview } from '../../types';
 import { problemsRepo } from '../../db';
@@ -26,6 +38,61 @@ export const OverviewTab: React.FC<Props> = ({
   const [userTimeComplexity, setUserTimeComplexity] = useState(problem.userTimeComplexity || '');
   const [userSpaceComplexity, setUserSpaceComplexity] = useState(problem.userSpaceComplexity || '');
   const [isEditingComplexity, setIsEditingComplexity] = useState(false);
+
+  // Editable Time Spent in Session Information
+  const [isEditingTimeSpent, setIsEditingTimeSpent] = useState(false);
+  const [timeSpentInput, setTimeSpentInput] = useState<string>(
+    problem.timeSpentMinutes !== null && problem.timeSpentMinutes !== undefined
+      ? String(problem.timeSpentMinutes)
+      : ''
+  );
+  const [isSavingTime, setIsSavingTime] = useState(false);
+
+  const handleStartTimeEdit = () => {
+    setTimeSpentInput(
+      problem.timeSpentMinutes !== null && problem.timeSpentMinutes !== undefined
+        ? String(problem.timeSpentMinutes)
+        : ''
+    );
+    setIsEditingTimeSpent(true);
+  };
+
+  const handleSaveTimeSpent = async () => {
+    setIsSavingTime(true);
+    try {
+      const trimmed = timeSpentInput.trim();
+      let newTime: number | null = null;
+      if (trimmed) {
+        const parsed = parseInt(trimmed, 10);
+        if (!isNaN(parsed) && parsed >= 0) {
+          newTime = parsed;
+        } else {
+          toast.error('Please enter a valid positive number for minutes.');
+          setIsSavingTime(false);
+          return;
+        }
+      }
+
+      await problemsRepo.update(problem.id, { timeSpentMinutes: newTime });
+      setIsEditingTimeSpent(false);
+      onProblemUpdated();
+      toast.success(newTime !== null ? `Time spent updated to ${newTime} mins` : 'Time spent cleared');
+    } catch (err) {
+      console.error('Failed to update time spent:', err);
+      toast.error('Failed to update time spent');
+    } finally {
+      setIsSavingTime(false);
+    }
+  };
+
+  const handleCancelTimeEdit = () => {
+    setIsEditingTimeSpent(false);
+    setTimeSpentInput(
+      problem.timeSpentMinutes !== null && problem.timeSpentMinutes !== undefined
+        ? String(problem.timeSpentMinutes)
+        : ''
+    );
+  };
 
   const handleSaveComplexity = async () => {
     try {
@@ -254,13 +321,73 @@ export const OverviewTab: React.FC<Props> = ({
           <h3 className="text-sm font-bold text-slate-900 dark:text-white">Session Information</h3>
 
           <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
-            <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
               <span className="flex items-center gap-1.5 text-slate-500">
                 <Clock className="w-3.5 h-3.5" /> Time Spent:
               </span>
-              <span className="font-semibold">
-                {problem.timeSpentMinutes ? `${problem.timeSpentMinutes} mins` : '—'}
-              </span>
+              {isEditingTimeSpent ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      autoFocus
+                      value={timeSpentInput}
+                      onChange={(e) => setTimeSpentInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveTimeSpent();
+                        if (e.key === 'Escape') handleCancelTimeEdit();
+                      }}
+                      placeholder="mins"
+                      className="w-20 px-2 py-0.5 text-xs font-mono bg-slate-50 dark:bg-slate-950 border border-indigo-500 rounded outline-none text-slate-900 dark:text-slate-100 pr-5"
+                      aria-label="Edit time spent in minutes"
+                    />
+                    <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">
+                      m
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isSavingTime}
+                    onClick={handleSaveTimeSpent}
+                    className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded transition-colors"
+                    title="Save time spent"
+                    aria-label="Save time spent"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelTimeEdit}
+                    className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                    title="Cancel edit"
+                    aria-label="Cancel edit"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 group">
+                  <span
+                    onClick={handleStartTimeEdit}
+                    className="font-semibold cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                    title="Click to edit time spent"
+                  >
+                    {problem.timeSpentMinutes !== null && problem.timeSpentMinutes !== undefined
+                      ? `${problem.timeSpentMinutes} mins`
+                      : '—'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleStartTimeEdit}
+                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors opacity-80 group-hover:opacity-100"
+                    title="Edit time spent"
+                    aria-label="Edit time spent"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800">

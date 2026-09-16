@@ -3,7 +3,7 @@ export type Status = 'Not Started' | 'In Progress' | 'Solved';
 
 export interface Problem {
   id: string;                    // uuid v4
-  number: number | null;         // LeetCode problem number, optional
+  number: number | null;         // Leetcode problem number, optional
   title: string;                 // required, 1-200 chars
   url: string | null;            // optional, must match leetcode.com/problems/* if present
   statement: string;             // optional but strongly encouraged
@@ -98,7 +98,7 @@ export interface NoteReview {
 export interface Settings {
   key?: string;                  // Dexie key for singleton row, e.g. 'current'
   geminiApiKey: string;
-  model: string;                 // e.g. 'gemini-2.5-flash'
+  model: string;                 // e.g. 'gemini-flash-lite-latest'
   defaultLanguage: string;
   theme: 'light' | 'dark' | 'system';
   temperature: number;           // default 0.4

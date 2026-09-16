@@ -1,10 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import type { Problem, Difficulty, Status } from '../../types';
 import { TAXONOMY_TOPICS, TAXONOMY_PATTERNS } from '../../types';
 import { TagInput } from '../common/TagInput';
-import { problemsRepo, settingsRepo } from '../../db';
+import { db, problemsRepo } from '../../db';
+
+const COMMON_LANGUAGES = [
+  'python',
+  'javascript',
+  'typescript',
+  'cpp',
+  'java',
+  'go',
+  'rust',
+  'csharp',
+];
 
 export interface ProblemFormData {
   number: number | null;
@@ -56,16 +68,23 @@ export const ProblemForm: React.FC<Props> = ({
   const [urlError, setUrlError] = useState<string | null>(null);
   const [numberWarning, setNumberWarning] = useState<{ id: string; title: string } | null>(null);
 
-  // Load default language from settings if adding new problem
+  // Reactive settings from Dexie
+  const liveSettings = useLiveQuery(() => db.settings.get('current'), []);
+  const userEditedLanguageRef = useRef(false);
+
+  // Sync default language from settings if adding new problem and user hasn't typed custom language
   useEffect(() => {
-    if (!initialData?.language) {
-      settingsRepo.get().then((s) => {
-        if (s?.defaultLanguage) {
-          setLanguage(s.defaultLanguage);
-        }
-      });
+    if (!initialData?.language && liveSettings?.defaultLanguage && !userEditedLanguageRef.current) {
+      setLanguage(liveSettings.defaultLanguage);
     }
-  }, [initialData]);
+  }, [initialData?.language, liveSettings?.defaultLanguage]);
+
+  // If initialData changes (e.g. loaded in edit mode)
+  useEffect(() => {
+    if (initialData?.language) {
+      setLanguage(initialData.language);
+    }
+  }, [initialData?.language]);
 
   // Check duplicate problem number (non-blocking warning per FR-1.2)
   useEffect(() => {
@@ -124,7 +143,10 @@ export const ProblemForm: React.FC<Props> = ({
       patterns,
       status,
       language: language.trim() || 'python',
-      timeSpentMinutes: !isNaN(parsedTime as number) && (parsedTime as number) >= 0 ? parsedTime : null,
+      timeSpentMinutes:
+        status === 'Solved' && !isNaN(parsedTime as number) && (parsedTime as number) >= 0
+          ? parsedTime
+          : null,
     });
   };
 
@@ -152,7 +174,7 @@ export const ProblemForm: React.FC<Props> = ({
         {/* Problem Number */}
         <div className="space-y-1.5 md:col-span-1">
           <label htmlFor="problem-number" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Number
+            Leetcode Number
           </label>
           <input
             id="problem-number"
@@ -160,7 +182,7 @@ export const ProblemForm: React.FC<Props> = ({
             min="1"
             value={number}
             onChange={(e) => setNumber(e.target.value)}
-            placeholder="e.g. 1"
+            placeholder="e.g. 75"
             className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
           />
         </div>
@@ -178,13 +200,12 @@ export const ProblemForm: React.FC<Props> = ({
               setTitle(e.target.value);
               if (titleError) setTitleError(null);
             }}
-            placeholder="e.g. Two Sum"
+            placeholder="e.g. Sort colors"
             maxLength={200}
-            className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${
-              titleError
-                ? 'border-rose-500 focus:ring-rose-500'
-                : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
-            }`}
+            className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${titleError
+              ? 'border-rose-500 focus:ring-rose-500'
+              : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
+              }`}
           />
           {titleError && (
             <p className="flex items-center gap-1 text-xs text-rose-500 mt-1">
@@ -215,7 +236,7 @@ export const ProblemForm: React.FC<Props> = ({
       {/* URL */}
       <div className="space-y-1.5">
         <label htmlFor="problem-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-          LeetCode URL
+          Leetcode URL
         </label>
         <input
           id="problem-url"
@@ -225,12 +246,11 @@ export const ProblemForm: React.FC<Props> = ({
             setUrl(e.target.value);
             if (urlError) setUrlError(null);
           }}
-          placeholder="https://leetcode.com/problems/two-sum/"
-          className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${
-            urlError
-              ? 'border-rose-500 focus:ring-rose-500'
-              : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
-          }`}
+          placeholder="https://leetcode.com/problems/sort-colors/"
+          className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${urlError
+            ? 'border-rose-500 focus:ring-rose-500'
+            : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
+            }`}
         />
         {urlError && (
           <p className="flex items-center gap-1 text-xs text-rose-500 mt-1">
@@ -311,34 +331,48 @@ export const ProblemForm: React.FC<Props> = ({
         />
       </div>
 
-      {/* Language & Time spent */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Language & Time spent (only shown when status === 'Solved') */}
+      <div className={`grid gap-4 ${status === 'Solved' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Language
           </label>
-          <input
-            type="text"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            placeholder="python, typescript, java, cpp..."
-            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-          />
+          <select
+            value={COMMON_LANGUAGES.includes(language) ? language : '__other__'}
+            onChange={(e) => {
+              userEditedLanguageRef.current = true;
+              if (e.target.value !== '__other__') {
+                setLanguage(e.target.value);
+              }
+            }}
+            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none cursor-pointer"
+          >
+            {COMMON_LANGUAGES.map((l) => (
+              <option key={l} value={l}>
+                {l.charAt(0).toUpperCase() + l.slice(1)}
+              </option>
+            ))}
+            {!COMMON_LANGUAGES.includes(language) && language && (
+              <option value="__other__">{language}</option>
+            )}
+          </select>
         </div>
 
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Time Spent (minutes)
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={timeSpentMinutes}
-            onChange={(e) => setTimeSpentMinutes(e.target.value)}
-            placeholder="e.g. 25"
-            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-          />
-        </div>
+        {status === 'Solved' && (
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Time Spent (minutes)
+            </label>
+            <input
+              type="number"
+              min="0"
+              value={timeSpentMinutes}
+              onChange={(e) => setTimeSpentMinutes(e.target.value)}
+              placeholder="e.g. 25"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            />
+          </div>
+        )}
       </div>
 
       <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">

@@ -1,65 +1,65 @@
-
 <!doctype html>
 <html lang="en">
 
 <head>
-    <title>Code coverage report for db/seed.ts</title>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="../prettify.css" />
-    <link rel="stylesheet" href="../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style type='text/css'>
-        .coverage-summary .sorter {
-            background-image: url(../sort-arrow-sprite.png);
-        }
-    </style>
+  <title>Code coverage report for db/seed.ts</title>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../prettify.css" />
+  <link rel="stylesheet" href="../base.css" />
+  <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style type='text/css'>
+    .coverage-summary .sorter {
+      background-image: url(../sort-arrow-sprite.png);
+    }
+  </style>
 </head>
-    
+
 <body>
-<div class='wrapper'>
+  <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">db</a> seed.ts</h1>
-        <div class='clearfix'>
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">99.72% </span>
-                <span class="quiet">Statements</span>
-                <span class='fraction'>369/370</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">90.62% </span>
-                <span class="quiet">Branches</span>
-                <span class='fraction'>29/32</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
-                <span class="quiet">Functions</span>
-                <span class='fraction'>2/2</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">99.72% </span>
-                <span class="quiet">Lines</span>
-                <span class='fraction'>369/370</span>
-            </div>
-        
-            
+      <h1><a href="../index.html">All files</a> / <a href="index.html">db</a> seed.ts</h1>
+      <div class='clearfix'>
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">99.72% </span>
+          <span class="quiet">Statements</span>
+          <span class='fraction'>369/370</span>
         </div>
-        <p class="quiet">
-            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
-        </p>
-        <template id="filterTemplate">
-            <div class="quiet">
-                Filter:
-                <input type="search" id="fileSearch">
-            </div>
-        </template>
+
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">90.62% </span>
+          <span class="quiet">Branches</span>
+          <span class='fraction'>29/32</span>
+        </div>
+
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">100% </span>
+          <span class="quiet">Functions</span>
+          <span class='fraction'>2/2</span>
+        </div>
+
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">99.72% </span>
+          <span class="quiet">Lines</span>
+          <span class='fraction'>369/370</span>
+        </div>
+
+
+      </div>
+      <p class="quiet">
+        Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the
+        previous block.
+      </p>
+      <template id="filterTemplate">
+        <div class="quiet">
+          Filter:
+          <input type="search" id="fileSearch">
+        </div>
+      </template>
     </div>
     <div class='status-line high'></div>
     <pre><table class="coverage">
@@ -1086,7 +1086,7 @@ const SAMPLE_PASS_REVIEW: CodeReview = {
     'Clear logic and proper edge-case considerations.',
   ],
   nextStep: 'Try solving the follow-up 3Sum problem or handling sorted array variations with Two Pointers.',
-  model: 'gemini-2.5-flash',
+  model: 'gemini-flash-lite-latest',
   createdAt: new Date().toISOString(),
 };
 &nbsp;
@@ -1120,7 +1120,7 @@ const SAMPLE_REVISE_REVIEW: CodeReview = {
   ],
   positives: ['Correctly identified the addition condition.'],
   nextStep: 'Replace the inner loop with a dictionary/hash map lookup to achieve O(n) time.',
-  model: 'gemini-2.5-flash',
+  model: 'gemini-flash-lite-latest',
   createdAt: new Date().toISOString(),
 };
 &nbsp;
@@ -1241,7 +1241,7 @@ export async function seedDatabase(count: number = 200): Promise&lt;{ problemsCo
           'How would you solve this if the array was already sorted in non-decreasing order?',
           'What is the space-time tradeoff between Two Pointers and Hash Map?',
         ],
-        model: 'gemini-2.5-flash',
+        model: 'gemini-flash-lite-latest',
       });
     }
 &nbsp;
@@ -1252,7 +1252,7 @@ export async function seedDatabase(count: number = 200): Promise&lt;{ problemsCo
         level: 1,
         content:
           'What information are you throwing away each time the inner loop checks an element? Can you remember what you have already inspected?',
-        model: 'gemini-2.5-flash',
+        model: 'gemini-flash-lite-latest',
       });
     }
     if (hintsUsed &gt;= 2 &amp;&amp; count &lt;= 200) {
@@ -1261,7 +1261,7 @@ export async function seedDatabase(count: number = 200): Promise&lt;{ problemsCo
         level: 2,
         content:
           'Hash Map pattern: store the value and index as you iterate. When at index `i`, check if `target - nums[i]` already exists in the map.',
-        model: 'gemini-2.5-flash',
+        model: 'gemini-flash-lite-latest',
       });
     }
   }
@@ -1278,23 +1278,27 @@ export async function clearDatabase(): Promise&lt;void&gt; {
     await db.noteReviews.clear();
   });
 }
-&nbsp;</pre></td></tr></table></pre>
+&nbsp;</pre>
+    </td>
+    </tr>
+    </table>
+    </pre>
 
-                <div class='push'></div><!-- for sticky footer -->
-            </div><!-- /wrapper -->
-            <div class='footer quiet pad2 space-top1 center small'>
-                Code coverage generated by
-                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-09-16T10:18:41.180Z
-            </div>
-        <script src="../prettify.js"></script>
-        <script>
-            window.onload = function () {
-                prettyPrint();
-            };
-        </script>
-        <script src="../sorter.js"></script>
-        <script src="../block-navigation.js"></script>
-    </body>
+    <div class='push'></div><!-- for sticky footer -->
+  </div><!-- /wrapper -->
+  <div class='footer quiet pad2 space-top1 center small'>
+    Code coverage generated by
+    <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+    at 2026-09-16T10:18:41.180Z
+  </div>
+  <script src="../prettify.js"></script>
+  <script>
+    window.onload = function () {
+      prettyPrint();
+    };
+  </script>
+  <script src="../sorter.js"></script>
+  <script src="../block-navigation.js"></script>
+</body>
+
 </html>
-    

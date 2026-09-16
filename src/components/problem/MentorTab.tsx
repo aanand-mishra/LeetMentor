@@ -1,11 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
-import { Lock, Unlock, RotateCw, AlertCircle, HelpCircle, Compass, FileCode, CheckCircle } from 'lucide-react';
+import {
+  Lock,
+  Unlock,
+  RotateCw,
+  AlertCircle,
+  HelpCircle,
+  Compass,
+  FileCode,
+  CheckCircle,
+  Copy,
+  Check,
+  BookmarkPlus,
+  Sparkles,
+} from 'lucide-react';
 import type { Problem, MentorMessage, Attempt } from '../../types';
 import { StatementMissingWarning } from './StatementMissingWarning';
-import { mentorRepo, settingsRepo } from '../../db';
+import { mentorRepo, settingsRepo, problemsRepo } from '../../db';
 import { requestMentorHint } from '../../lib/gemini/client';
 import { useToast } from '../../hooks/useToast';
+import { formatMentorMarkdown } from '../../lib/formatMentorMarkdown';
 
 interface Props {
   problem: Problem;
@@ -80,7 +94,7 @@ export const MentorTab: React.FC<Props> = ({
     }
   }, [showLevel4Modal]);
 
-  const [configuredModel, setConfiguredModel] = useState<string>('gemini-2.5-flash');
+  const [configuredModel, setConfiguredModel] = useState<string>('gemini-flash-lite-latest');
 
   useEffect(() => {
     settingsRepo.get().then((s) => {
@@ -89,6 +103,44 @@ export const MentorTab: React.FC<Props> = ({
   }, []);
 
   const isStatementMissing = !problem.statement || !problem.statement.trim();
+  const [copiedLevel, setCopiedLevel] = useState<number | null>(null);
+  const [lastError, setLastError] = useState<{ level: number; message: string; is503: boolean } | null>(null);
+
+  const handleCopyContent = async (content: string, level: number) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedLevel(level);
+      setTimeout(() => setCopiedLevel(null), 2000);
+      toast.success('Copied hint to clipboard');
+    } catch {
+      toast.error('Failed to copy to clipboard');
+    }
+  };
+
+  const handleSaveToNotes = async (content: string, hintTitle: string) => {
+    try {
+      const existing = problem.notes ? problem.notes.trim() : '';
+      const addition = `\n\n### AI Mentor: ${hintTitle}\n${content}`;
+      const newNotes = existing ? `${existing}${addition}` : addition.trim();
+      await problemsRepo.update(problem.id, { notes: newNotes });
+      toast.success(`Appended ${hintTitle} to problem Notes!`);
+      onProblemUpdated();
+    } catch {
+      toast.error('Failed to save to notes');
+    }
+  };
+
+  const handleSwitchToFlashAndRetry = async (level: 1 | 2 | 3 | 4) => {
+    try {
+      await settingsRepo.update({ model: 'gemini-2.5-flash' });
+      setConfiguredModel('gemini-2.5-flash');
+      setLastError(null);
+      toast.success('Switched model to gemini-2.5-flash. Retrying...');
+      await executeUnlock(level);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Retry failed');
+    }
+  };
 
   // Map messages by level
   const messageMap = new Map<number, MentorMessage>();
@@ -159,8 +211,8 @@ def solve(nums, target):
     return []
 \`\`\`
 
-### Complexity Analysis
-- **Time Complexity:** $O(N)$ because hash map lookups take $O(1)$ amortized time.
+### Leetcodety Analysis
+- **Leetcodeplexity:** $O(N)$ because hash map lookups take $O(1)$ amortized time.
 - **Space Complexity:** $O(N)$ auxiliary space to store elements in the hash table.
 
 ### Edge Cases
@@ -191,11 +243,13 @@ def solve(nums, target):
   };
 
   const executeUnlock = async (level: 1 | 2 | 3 | 4) => {
+    setShowLevel4Modal(false);
+    setLastError(null);
     try {
       setLoadingLevel(level);
       let content: string;
       const settings = await settingsRepo.get();
-      let usedModel = settings.model || 'gemini-2.5-flash';
+      let usedModel = settings.model || 'gemini-flash-lite-latest';
 
       if (onUnlockRequested) {
         content = await onUnlockRequested(level);
@@ -222,20 +276,23 @@ def solve(nums, target):
       onProblemUpdated();
     } catch (err) {
       console.error('Failed to unlock hint:', err);
-      toast.error('Failed to retrieve hint from mentor.');
+      const msg = err instanceof Error ? err.message : 'Failed to retrieve hint from mentor.';
+      const is503 = msg.includes('503') || msg.includes('No capacity') || msg.includes('UNAVAILABLE');
+      setLastError({ level, message: msg, is503 });
+      toast.error(msg);
     } finally {
       setLoadingLevel(null);
-      setShowLevel4Modal(false);
     }
   };
 
   // Regenerate action per unlocked level (FR-5.3)
   const handleRegenerate = async (level: 1 | 2 | 3 | 4) => {
+    setLastError(null);
     try {
       setLoadingLevel(level);
       let content: string;
       const settings = await settingsRepo.get();
-      let usedModel = settings.model || 'gemini-2.5-flash';
+      let usedModel = settings.model || 'gemini-flash-lite-latest';
 
       if (onUnlockRequested) {
         content = await onUnlockRequested(level);
@@ -261,7 +318,10 @@ def solve(nums, target):
       onProblemUpdated();
     } catch (err) {
       console.error('Failed to regenerate hint:', err);
-      toast.error('Failed to regenerate hint.');
+      const msg = err instanceof Error ? err.message : 'Failed to regenerate hint.';
+      const is503 = msg.includes('503') || msg.includes('No capacity') || msg.includes('UNAVAILABLE');
+      setLastError({ level, message: msg, is503 });
+      toast.error(msg);
     } finally {
       setLoadingLevel(null);
     }
@@ -300,11 +360,10 @@ def solve(nums, target):
             return (
               <div
                 key={lvl}
-                className={`w-3 h-3 rounded-full transition-colors ${
-                  unlocked
-                    ? 'bg-indigo-600 dark:bg-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900'
-                    : 'bg-slate-200 dark:bg-slate-700'
-                }`}
+                className={`w-3 h-3 rounded-full transition-colors ${unlocked
+                  ? 'bg-indigo-600 dark:bg-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900'
+                  : 'bg-slate-200 dark:bg-slate-700'
+                  }`}
                 title={`Level ${lvl}: ${HINT_CONFIGS[lvl - 1].title} (${unlocked ? 'Unlocked' : 'Locked'})`}
               />
             );
@@ -325,25 +384,23 @@ def solve(nums, target):
             <div
               key={cfg.level}
               data-testid={`mentor-card-level-${cfg.level}`}
-              className={`rounded-xl border transition-all duration-200 ${
-                unlocked
-                  ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
-                  : canUnlock
+              className={`rounded-xl border transition-all duration-200 ${unlocked
+                ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
+                : canUnlock
                   ? 'bg-slate-50/70 dark:bg-slate-900/50 border-dashed border-slate-300 dark:border-slate-700'
                   : 'bg-slate-100/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/60 opacity-60'
-              }`}
+                }`}
             >
               {/* Card Header */}
               <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start sm:items-center gap-3.5">
                   <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                      unlocked
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60'
-                        : canUnlock
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${unlocked
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60'
+                      : canUnlock
                         ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                         : 'bg-slate-200/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-600'
-                    }`}
+                      }`}
                   >
                     {unlocked ? <Icon className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
                   </div>
@@ -393,11 +450,10 @@ def solve(nums, target):
                             ? `Unlock Level ${cfg.level - 1} (${HINT_CONFIGS[cfg.level - 2].title}) first`
                             : undefined
                         }
-                        className={`px-4 py-2 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
-                          canUnlock
-                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow active:scale-[0.99]'
-                            : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
-                        }`}
+                        className={`px-4 py-2 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${canUnlock
+                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow active:scale-[0.99]'
+                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                          }`}
                       >
                         {isLoading ? (
                           <>
@@ -421,11 +477,88 @@ def solve(nums, target):
                 </div>
               </div>
 
+              {/* Inline Error Warning for this level */}
+              {lastError && lastError.level === cfg.level && (
+                <div className="mx-4 mb-4 p-4 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-start gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-semibold text-rose-800 dark:text-rose-300">
+                        Generation Notice
+                      </span>
+                      <p className="text-rose-700 dark:text-rose-400 mt-0.5">
+                        {lastError.message}
+                      </p>
+                    </div>
+                  </div>
+                  {lastError.is503 && (
+                    <button
+                      type="button"
+                      onClick={() => handleSwitchToFlashAndRetry(cfg.level)}
+                      className="shrink-0 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs shadow-xs transition-all active:scale-95 flex items-center gap-1"
+                    >
+                      <RotateCw className="w-3 h-3" />
+                      <span>Switch to Flash & Retry</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Unlocked Content Area */}
               {unlocked && message && (
-                <div className="border-t border-slate-100 dark:border-slate-800/80 p-5 bg-slate-50/50 dark:bg-slate-900/40 rounded-b-xl">
-                  <MarkdownRenderer content={message.content} />
-                  <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+                <div className="border-t border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-950/40 rounded-b-xl overflow-hidden">
+                  {/* Top quick-action toolbar */}
+                  <div className="px-5 py-2.5 bg-slate-50/90 dark:bg-slate-900/80 border-b border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-medium">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+                      <span>{cfg.badgeLabel} Guide</span>
+                      <span className="text-slate-300 dark:text-slate-700">•</span>
+                      <span className="text-[11px] font-mono">
+                        ~{Math.max(1, Math.ceil(message.content.split(/\s+/).length / 150))} min read
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyContent(message.content, cfg.level)}
+                        className="px-2.5 py-1 rounded-md text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-2xs flex items-center gap-1.5 transition-all"
+                        title="Copy full content"
+                      >
+                        {copiedLevel === cfg.level ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 text-emerald-500" />
+                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copied!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Copy Hint</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleSaveToNotes(message.content, cfg.title)}
+                        className="px-2.5 py-1 rounded-md text-[11px] font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 hover:bg-indigo-100/70 dark:hover:bg-indigo-900/50 shadow-2xs flex items-center gap-1.5 transition-all"
+                        title="Append this solution/hint to your Notes tab"
+                      >
+                        <BookmarkPlus className="w-3.5 h-3.5" />
+                        <span>Add to Notes</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Formatted Markdown Content */}
+                  <div className="p-5 sm:p-6">
+                    <MarkdownRenderer
+                      content={formatMentorMarkdown(message.content, problem.language || 'python')}
+                    />
+                  </div>
+
+                  {/* Metadata footer */}
+                  <div className="px-5 py-2.5 bg-slate-50/50 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                     <span>
                       Model: {message.model && message.model !== 'gemini-1.5-flash' ? message.model : configuredModel}
                     </span>
@@ -488,7 +621,10 @@ def solve(nums, target):
               </button>
               <button
                 type="button"
-                onClick={() => executeUnlock(4)}
+                onClick={() => {
+                  setShowLevel4Modal(false);
+                  executeUnlock(4);
+                }}
                 className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-sm"
               >
                 Unlock Solution

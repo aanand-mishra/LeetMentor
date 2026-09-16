@@ -43,7 +43,7 @@ export function getTodayDateString(): string {
 export const DEFAULT_SETTINGS: Settings = {
   key: 'current',
   geminiApiKey: '',
-  model: 'gemini-2.5-flash',
+  model: 'gemini-flash-lite-latest',
   defaultLanguage: 'python',
   theme: 'system',
   temperature: 0.4,
@@ -442,29 +442,33 @@ export const settingsRepo = {
       return DEFAULT_SETTINGS;
     }
 
+    const merged: Settings = {
+      ...DEFAULT_SETTINGS,
+      ...existing,
+    };
+
     // Reset daily counter if date changed
     if (existing.dailyRequestDate !== today) {
-      const updated = {
-        ...existing,
-        dailyRequestCount: 0,
-        dailyRequestDate: today,
-      };
-      await db.settings.put(updated);
-      return updated;
+      merged.dailyRequestCount = 0;
+      merged.dailyRequestDate = today;
+      await db.settings.put(merged);
     }
 
-    return existing;
+    return merged;
   },
 
   async update(partial: Partial<Settings>): Promise<Settings> {
-    const current = await this.get();
-    const updated: Settings = {
-      ...current,
-      ...partial,
-      key: 'current',
-    };
-    await db.settings.put(updated);
-    return updated;
+    return db.transaction('rw', db.settings, async () => {
+      const existing = await db.settings.get('current');
+      const current = existing ? { ...DEFAULT_SETTINGS, ...existing } : DEFAULT_SETTINGS;
+      const updated: Settings = {
+        ...current,
+        ...partial,
+        key: 'current',
+      };
+      await db.settings.put(updated);
+      return updated;
+    });
   },
 
   async incrementDailyUsage(): Promise<number> {

@@ -30,10 +30,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenShortcuts }) => {
             to="/"
             className="flex items-center gap-2 group font-semibold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
           >
-            <div className="w-7 h-7 rounded-md bg-indigo-600 dark:bg-indigo-500 flex items-center justify-center text-white font-mono font-bold text-xs shadow-sm">
-              LC
-            </div>
-            <span className="text-base tracking-tight font-medium">LeetCode DSA Tracker</span>
+            <img
+              src="/favicon.svg"
+              alt="Leetcode DSA Tracker"
+              className="w-7 h-7 rounded-md shadow-xs object-contain"
+            />
+            <span className="text-base tracking-tight font-medium">Leetcode DSA Tracker</span>
           </Link>
         </div>
 
@@ -70,11 +72,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenShortcuts }) => {
           {/* Settings link */}
           <Link
             to="/settings"
-            className={`p-2 rounded-md transition-colors ${
-              location.pathname === '/settings'
+            className={`p-2 rounded-md transition-colors ${location.pathname === '/settings'
                 ? 'bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400'
                 : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
+              }`}
             title="Settings"
             aria-label="Settings"
           >

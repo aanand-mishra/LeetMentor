@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Key,
   Eye,
@@ -143,7 +143,7 @@ export const SettingsPage: React.FC = () => {
     setIsTestingKey(true);
     setTestResult(null);
 
-    const modelToTest = settings?.model || 'gemini-2.5-flash';
+    const modelToTest = settings?.model || 'gemini-flash-lite-latest';
     const result = await testConnection(keyToTest, modelToTest);
 
     setIsTestingKey(false);
@@ -159,9 +159,40 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  // Debounce refs for model temperature
+  const tempTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const lastPersistedTempRef = useRef<number | null>(null);
+  const currentTempRef = useRef<number>(settings?.temperature ?? 0.4);
+
+  useEffect(() => {
+    if (settings && lastPersistedTempRef.current === null) {
+      lastPersistedTempRef.current = settings.temperature;
+    }
+    if (settings) {
+      currentTempRef.current = settings.temperature;
+    }
+  }, [settings]);
+
+  // Clean up timer on unmount and persist any pending temperature change
+  useEffect(() => {
+    return () => {
+      if (tempTimerRef.current) {
+        clearTimeout(tempTimerRef.current);
+        const finalTemp = currentTempRef.current;
+        if (
+          lastPersistedTempRef.current !== null &&
+          Math.abs(lastPersistedTempRef.current - finalTemp) >= 0.001
+        ) {
+          settingsRepo.update({ temperature: finalTemp }).catch(console.error);
+        }
+      }
+    };
+  }, []);
+
   // Update a single setting
   const handleUpdateSetting = async <K extends keyof Settings>(key: K, value: Settings[K]) => {
     if (!settings) return;
+    if (settings[key] === value) return; // Do not notify or save if setting is unchanged
     try {
       await settingsRepo.update({ [key]: value });
       setSettings((prev) => (prev ? { ...prev, [key]: value } : null));
@@ -170,6 +201,35 @@ export const SettingsPage: React.FC = () => {
       console.error(`Failed to update ${key}:`, err);
       toast.error('Failed to update setting');
     }
+  };
+
+  // Debounced temperature slider update: waits 1.5 seconds and only notifies if actually changed
+  const handleTemperatureChange = (newVal: number) => {
+    setSettings((prev) => (prev ? { ...prev, temperature: newVal } : null));
+    currentTempRef.current = newVal;
+
+    if (tempTimerRef.current) {
+      clearTimeout(tempTimerRef.current);
+    }
+
+    tempTimerRef.current = setTimeout(async () => {
+      tempTimerRef.current = null;
+      if (
+        lastPersistedTempRef.current !== null &&
+        Math.abs(lastPersistedTempRef.current - newVal) < 0.001
+      ) {
+        return;
+      }
+
+      try {
+        await settingsRepo.update({ temperature: newVal });
+        lastPersistedTempRef.current = newVal;
+        toast.success('Setting updated');
+      } catch (err) {
+        console.error('Failed to update temperature:', err);
+        toast.error('Failed to update setting');
+      }
+    }, 1500);
   };
 
   // Handle file selected for import (FR-8.6)
@@ -359,11 +419,10 @@ export const SettingsPage: React.FC = () => {
           {/* Test connection report feedback */}
           {testResult && (
             <div
-              className={`p-3 rounded-lg text-xs flex items-start gap-2 ${
-                testResult.ok
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-              }`}
+              className={`p-3 rounded-lg text-xs flex items-start gap-2 ${testResult.ok
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                }`}
             >
               {testResult.ok ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -425,7 +484,7 @@ export const SettingsPage: React.FC = () => {
                 type="text"
                 value={settings.model}
                 onChange={(e) => handleUpdateSetting('model', e.target.value.trim())}
-                placeholder="e.g. gemini-2.5-flash"
+                placeholder="e.g. gemini-flash-lite-latest"
                 className="flex-1 px-3.5 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
@@ -541,11 +600,10 @@ export const SettingsPage: React.FC = () => {
                     setTheme(t);
                     handleUpdateSetting('theme', t);
                   }}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-md capitalize transition-colors ${
-                    theme === t
-                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-md capitalize transition-colors ${theme === t
+                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
                 >
                   {t}
                 </button>
@@ -559,24 +617,25 @@ export const SettingsPage: React.FC = () => {
           {/* Temperature Slider */}
           <div className="space-y-1.5 md:col-span-2">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label htmlFor="model-temp" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Model Temperature ({settings.temperature.toFixed(2)})
               </label>
               <span className="text-[11px] text-slate-400 font-mono">
                 {settings.temperature <= 0.2
                   ? 'More deterministic / rigorous'
                   : settings.temperature >= 0.7
-                  ? 'More exploratory / creative'
-                  : 'Balanced (recommended)'}
+                    ? 'More exploratory / creative'
+                    : 'Balanced (recommended)'}
               </span>
             </div>
             <input
+              id="model-temp"
               type="range"
               min="0.0"
               max="1.0"
               step="0.05"
               value={settings.temperature}
-              onChange={(e) => handleUpdateSetting('temperature', parseFloat(e.target.value))}
+              onChange={(e) => handleTemperatureChange(parseFloat(e.target.value))}
               className="w-full accent-indigo-600"
             />
             <p className="text-[11px] text-slate-400">
@@ -667,7 +726,7 @@ export const SettingsPage: React.FC = () => {
               Demo & Sample Data
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Populate the local database with realistic LeetCode problems (with attempts, reviews, notes, and mentor hints) or high-volume performance test sets.
+              Populate the local database with realistic Leetcode problems (with attempts, reviews, notes, and mentor hints) or high-volume performance test sets.
             </p>
           </div>
         </div>
@@ -847,17 +906,16 @@ export const SettingsPage: React.FC = () => {
                 type="button"
                 disabled={isImporting || (importMode === 'replace' && replaceConfirmInput !== 'REPLACE')}
                 onClick={handleExecuteImport}
-                className={`px-4 py-2 text-xs font-semibold rounded-lg text-white shadow-xs disabled:opacity-50 ${
-                  importMode === 'replace'
-                    ? 'bg-rose-600 hover:bg-rose-700'
-                    : 'bg-indigo-600 hover:bg-indigo-700'
-                }`}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg text-white shadow-xs disabled:opacity-50 ${importMode === 'replace'
+                  ? 'bg-rose-600 hover:bg-rose-700'
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+                  }`}
               >
                 {isImporting
                   ? 'Importing…'
                   : importMode === 'replace'
-                  ? 'Confirm & Replace All'
-                  : 'Merge into Database'}
+                    ? 'Confirm & Replace All'
+                    : 'Merge into Database'}
               </button>
             </div>
           </div>

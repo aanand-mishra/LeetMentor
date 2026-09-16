@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Code,
   Send,
@@ -11,12 +11,24 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { useLiveQuery } from 'dexie-react-hooks';
 import type { Problem, Attempt, CodeReview } from '../../types';
-import { attemptsRepo, problemsRepo, settingsRepo } from '../../db';
+import { db, attemptsRepo, problemsRepo, settingsRepo } from '../../db';
 import { requestCodeReview } from '../../lib/gemini/client';
 import { CodeDisplay } from './CodeDisplay';
 import { CodeReviewBlock } from './CodeReviewBlock';
 import { useToast } from '../../hooks/useToast';
+
+const COMMON_LANGUAGES = [
+  'python',
+  'javascript',
+  'typescript',
+  'cpp',
+  'java',
+  'go',
+  'rust',
+  'csharp',
+];
 
 interface Props {
   problem: Problem;
@@ -34,9 +46,27 @@ export const AttemptsTab: React.FC<Props> = ({
   onReviewRequested,
 }) => {
   const toast = useToast();
+  const liveSettings = useLiveQuery(() => db.settings.get('current'), []);
+  const userEditedLanguageRef = useRef(false);
+
   const [code, setCode] = useState(prefillCode);
-  const [language, setLanguage] = useState(problem.language || 'python');
+  const [language, setLanguage] = useState(
+    problem.language || 'python'
+  );
   const [userComment, setUserComment] = useState('');
+
+  // Sync language with settings or previous attempt if not manually modified
+  useEffect(() => {
+    if (userEditedLanguageRef.current) return;
+
+    if (attempts.length > 0 && attempts[0].language) {
+      setLanguage(attempts[0].language);
+    } else if (liveSettings?.defaultLanguage) {
+      setLanguage(liveSettings.defaultLanguage);
+    } else if (problem.language) {
+      setLanguage(problem.language);
+    }
+  }, [liveSettings?.defaultLanguage, attempts, problem.language]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isReviewingId, setIsReviewingId] = useState<string | null>(null);
   const [expandedAttempts, setExpandedAttempts] = useState<Record<string, boolean>>({
@@ -100,6 +130,7 @@ export const AttemptsTab: React.FC<Props> = ({
 
       setCode('');
       setUserComment('');
+      userEditedLanguageRef.current = false;
       toast.success(`Attempt #${attempt.attemptNumber} saved!`);
 
       // Set newest expanded
@@ -141,20 +172,20 @@ export const AttemptsTab: React.FC<Props> = ({
             summary: isOpt
               ? 'Optimal time and space complexity using a single-pass hash lookup. All constraints and edge cases handled.'
               : 'The current solution uses nested iteration resulting in quadratic runtime. Revise to meet optimal bounds.',
-          correctness: {
-            status: isOpt ? 'correct' : 'fails_edge_cases',
-            failingCases: isOpt ? [] : ['Large input performance limit (TLE)'],
-          },
-          complexity: {
-            time: isOpt ? 'O(n)' : 'O(n^2)',
-            space: isOpt ? 'O(n)' : 'O(1)',
-            optimalTime: 'O(n)',
-            optimalSpace: 'O(n)',
-            isOptimal: isOpt,
-          },
-          issues: isOpt
-            ? []
-            : [
+            correctness: {
+              status: isOpt ? 'correct' : 'fails_edge_cases',
+              failingCases: isOpt ? [] : ['Large input performance limit (TLE)'],
+            },
+            complexity: {
+              time: isOpt ? 'O(n)' : 'O(n^2)',
+              space: isOpt ? 'O(n)' : 'O(1)',
+              optimalTime: 'O(n)',
+              optimalSpace: 'O(n)',
+              isOptimal: isOpt,
+            },
+            issues: isOpt
+              ? []
+              : [
                 {
                   severity: 'major',
                   title: 'Quadratic Time Complexity',
@@ -162,15 +193,15 @@ export const AttemptsTab: React.FC<Props> = ({
                   suggestion: 'Trade space for time by caching visited elements in a map.',
                 },
               ],
-          positives: ['Clean logic structure', 'Proper syntax and argument handling'],
-          nextStep: isOpt
-            ? 'Great work! Try an advanced variation or review your notes.'
-            : 'Replace the inner loop with a hash map lookup to achieve O(n) runtime.',
-          model: settings.model || 'gemini-2.5-flash',
-          createdAt: new Date().toISOString(),
-        };
+            positives: ['Clean logic structure', 'Proper syntax and argument handling'],
+            nextStep: isOpt
+              ? 'Great work! Try an advanced variation or review your notes.'
+              : 'Replace the inner loop with a hash map lookup to achieve O(n) runtime.',
+            model: settings.model || 'gemini-flash-lite-latest',
+            createdAt: new Date().toISOString(),
+          };
+        }
       }
-    }
 
       await attemptsRepo.attachReview(attempt.id, reviewResult);
 
@@ -183,14 +214,14 @@ export const AttemptsTab: React.FC<Props> = ({
             dateSolved: new Date().toISOString(),
           });
         }
+        onProblemUpdated();
       } else {
         toast.info('Review returned REVISE. Fix issues and resubmit.');
+        onProblemUpdated();
       }
-
-      onProblemUpdated();
     } catch (err) {
       console.error('Failed to review attempt:', err);
-      toast.error('Code review failed. Please retry.');
+      toast.error(err instanceof Error ? err.message : 'Code review failed. Please retry.');
     } finally {
       setIsReviewingId(null);
     }
@@ -262,17 +293,29 @@ export const AttemptsTab: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <label htmlFor="attempt-lang" className="text-xs text-slate-500 font-medium">
+            <label htmlFor="attempt-lang" className="text-xs text-slate-500 font-medium shrink-0">
               Language:
             </label>
-            <input
+            <select
               id="attempt-lang"
-              type="text"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              placeholder="python"
-              className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-xs font-mono outline-none focus:ring-1 focus:ring-indigo-500"
-            />
+              value={COMMON_LANGUAGES.includes(language) ? language : '__other__'}
+              onChange={(e) => {
+                userEditedLanguageRef.current = true;
+                if (e.target.value !== '__other__') {
+                  setLanguage(e.target.value);
+                }
+              }}
+              className="px-2.5 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-xs font-mono text-slate-900 dark:text-slate-100 outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+            >
+              {COMMON_LANGUAGES.map((l) => (
+                <option key={l} value={l}>
+                  {l.charAt(0).toUpperCase() + l.slice(1)}
+                </option>
+              ))}
+              {!COMMON_LANGUAGES.includes(language) && (
+                <option value="__other__">{language}</option>
+              )}
+            </select>
           </div>
         </div>
 
@@ -369,7 +412,7 @@ export const AttemptsTab: React.FC<Props> = ({
                 {/* Header Row (Click to toggle expand) */}
                 <div
                   onClick={() => toggleExpand(att.id)}
-                  className="px-4 py-3 bg-slate-50/70 dark:bg-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between transition-colors text-xs select-none"
+                  className="px-4 py-3 bg-slate-50/70 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between transition-colors text-xs select-none"
                 >
                   <div className="flex items-center gap-3">
                     <button
@@ -438,7 +481,7 @@ export const AttemptsTab: React.FC<Props> = ({
 
                     {/* Review Section */}
                     {isReviewing ? (
-                      <div className="p-6 bg-slate-50 dark:bg-slate-850 rounded-xl text-center text-xs text-slate-500 space-y-2">
+                      <div className="p-6 bg-slate-100 dark:bg-slate-800/60 rounded-xl text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
                         <div className="animate-spin w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full mx-auto" />
                         <p className="font-medium">Reviewing your code with AI...</p>
                       </div>
@@ -448,7 +491,7 @@ export const AttemptsTab: React.FC<Props> = ({
                         onFixAndResubmit={() => handleFixAndResubmit(att.code)}
                       />
                     ) : (
-                      <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-850 rounded-lg border border-slate-200 dark:border-slate-800">
+                      <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
                         <span className="text-xs text-slate-500">This attempt was saved without a review.</span>
                         <button
                           type="button"

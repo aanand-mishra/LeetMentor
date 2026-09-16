@@ -11,7 +11,7 @@ export const ZeroProblemsEmptyState: React.FC<NoProblemsProps> = ({ onSeedData, 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center max-w-lg mx-auto shadow-sm my-8">
       <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-        Start tracking your LeetCode practice
+        Start tracking your Leetcode practice
       </h2>
       <p className="text-sm text-slate-600 dark:text-slate-400 mt-2.5 leading-relaxed">
         Track your DSA progress locally, receive progressive non-spoiling hints, and master algorithms through iterative AI code reviews.

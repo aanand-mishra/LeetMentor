@@ -35,7 +35,7 @@ describe('Data Layer & Repositories', () => {
     it('returns default settings when unset', async () => {
       const settings = await settingsRepo.get();
       expect(settings.geminiApiKey).toBe('');
-      expect(settings.model).toBe('gemini-2.5-flash');
+      expect(settings.model).toBe('gemini-flash-lite-latest');
       expect(settings.defaultLanguage).toBe('python');
       expect(settings.theme).toBe('system');
       expect(settings.temperature).toBe(0.4);
@@ -46,7 +46,7 @@ describe('Data Layer & Repositories', () => {
       const updated = await settingsRepo.get();
       expect(updated.geminiApiKey).toBe('test-key-123');
       expect(updated.temperature).toBe(0.7);
-      expect(updated.model).toBe('gemini-2.5-flash');
+      expect(updated.model).toBe('gemini-flash-lite-latest');
     });
 
     it('increments daily request count', async () => {
@@ -159,7 +159,7 @@ describe('Data Layer & Repositories', () => {
         problemId: problem.id,
         level: 1,
         content: 'Check base case first.',
-        model: 'gemini-2.5-flash',
+        model: 'gemini-flash-lite-latest',
       });
 
       // Add 1 note review
@@ -173,7 +173,7 @@ describe('Data Layer & Repositories', () => {
         strengths: ['Great!'],
         keyTakeaway: 'DFS recursion is natural for trees',
         recallQuestions: ['What is the base case?'],
-        model: 'gemini-2.5-flash',
+        model: 'gemini-flash-lite-latest',
       });
 
       // Verify records exist

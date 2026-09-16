@@ -37,3 +37,35 @@
 *:focus-visible {
   @apply outline-none ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900;
 }
+
+/* Markdown typography and KaTeX enhancements */
+.markdown-body {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.markdown-body p {
+  margin-top: 0.625rem;
+  margin-bottom: 0.625rem;
+}
+
+.markdown-body strong {
+  font-weight: 600;
+}
+
+.markdown-body hr {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.3), transparent);
+  margin: 1.5rem 0;
+}
+
+.katex {
+  font-size: 1.05em !important;
+  color: #4f46e5;
+}
+
+.dark .katex {
+  color: #818cf8;
+}
+

@@ -1,65 +1,65 @@
-
 <!doctype html>
 <html lang="en">
 
 <head>
-    <title>Code coverage report for lib/gemini/prompts.ts</title>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="../../prettify.css" />
-    <link rel="stylesheet" href="../../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style type='text/css'>
-        .coverage-summary .sorter {
-            background-image: url(../../sort-arrow-sprite.png);
-        }
-    </style>
+  <title>Code coverage report for lib/gemini/prompts.ts</title>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="../../prettify.css" />
+  <link rel="stylesheet" href="../../base.css" />
+  <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style type='text/css'>
+    .coverage-summary .sorter {
+      background-image: url(../../sort-arrow-sprite.png);
+    }
+  </style>
 </head>
-    
+
 <body>
-<div class='wrapper'>
+  <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">lib/gemini</a> prompts.ts</h1>
-        <div class='clearfix'>
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">88.57% </span>
-                <span class="quiet">Statements</span>
-                <span class='fraction'>124/140</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">20% </span>
-                <span class="quiet">Branches</span>
-                <span class='fraction'>4/20</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">75% </span>
-                <span class="quiet">Functions</span>
-                <span class='fraction'>3/4</span>
-            </div>
-        
-            
-            <div class='fl pad1y space-right2'>
-                <span class="strong">88.57% </span>
-                <span class="quiet">Lines</span>
-                <span class='fraction'>124/140</span>
-            </div>
-        
-            
+      <h1><a href="../../index.html">All files</a> / <a href="index.html">lib/gemini</a> prompts.ts</h1>
+      <div class='clearfix'>
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">88.57% </span>
+          <span class="quiet">Statements</span>
+          <span class='fraction'>124/140</span>
         </div>
-        <p class="quiet">
-            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
-        </p>
-        <template id="filterTemplate">
-            <div class="quiet">
-                Filter:
-                <input type="search" id="fileSearch">
-            </div>
-        </template>
+
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">20% </span>
+          <span class="quiet">Branches</span>
+          <span class='fraction'>4/20</span>
+        </div>
+
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">75% </span>
+          <span class="quiet">Functions</span>
+          <span class='fraction'>3/4</span>
+        </div>
+
+
+        <div class='fl pad1y space-right2'>
+          <span class="strong">88.57% </span>
+          <span class="quiet">Lines</span>
+          <span class='fraction'>124/140</span>
+        </div>
+
+
+      </div>
+      <p class="quiet">
+        Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the
+        previous block.
+      </p>
+      <template id="filterTemplate">
+        <div class="quiet">
+          Filter:
+          <input type="search" id="fileSearch">
+        </div>
+      </template>
     </div>
     <div class='status-line high'></div>
     <pre><table class="coverage">
@@ -788,7 +788,7 @@ export const NOTES_REVIEW_RESPONSE_SCHEMA = {
 // Mentor Prompt (§7.6)
 // ==========================================
 export function buildMentorSystemInstruction(level: 1 | 2 | 3 | 4, language: string): string {
-  return `You are a DSA mentor helping a student solve a LeetCode problem. You will be given a
+  return `You are a DSA mentor helping a student solve a Leetcode problem. You will be given a
 problem and a HINT LEVEL. Answer ONLY at the requested level. Never reveal anything
 belonging to a higher level, even if the student's question seems to invite it.
 &nbsp;
@@ -840,23 +840,27 @@ PROBLEM STATEMENT:
 <span class="cstat-no" title="statement not covered" >${statementStr}</span>
 <span class="cstat-no" title="statement not covered" >${attemptContext}`;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
-&nbsp;</pre></td></tr></table></pre>
+&nbsp;</pre>
+    </td>
+    </tr>
+    </table>
+    </pre>
 
-                <div class='push'></div><!-- for sticky footer -->
-            </div><!-- /wrapper -->
-            <div class='footer quiet pad2 space-top1 center small'>
-                Code coverage generated by
-                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-09-16T10:18:41.180Z
-            </div>
-        <script src="../../prettify.js"></script>
-        <script>
-            window.onload = function () {
-                prettyPrint();
-            };
-        </script>
-        <script src="../../sorter.js"></script>
-        <script src="../../block-navigation.js"></script>
-    </body>
+    <div class='push'></div><!-- for sticky footer -->
+  </div><!-- /wrapper -->
+  <div class='footer quiet pad2 space-top1 center small'>
+    Code coverage generated by
+    <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+    at 2026-09-16T10:18:41.180Z
+  </div>
+  <script src="../../prettify.js"></script>
+  <script>
+    window.onload = function () {
+      prettyPrint();
+    };
+  </script>
+  <script src="../../sorter.js"></script>
+  <script src="../../block-navigation.js"></script>
+</body>
+
 </html>
-    

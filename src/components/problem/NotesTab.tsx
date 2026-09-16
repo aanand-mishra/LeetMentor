@@ -109,7 +109,7 @@ export const NotesTab: React.FC<Props> = ({
   const isReviewDisabled = charCount < 50 || isReviewing;
 
   // Default mock review generator for Phase 8
-  const getMockReview = (notesText: string, modelUsed = 'gemini-2.5-flash'): Omit<NoteReview, 'id' | 'createdAt'> => {
+  const getMockReview = (notesText: string, modelUsed = 'gemini-flash-lite-latest'): Omit<NoteReview, 'id' | 'createdAt'> => {
     return {
       problemId: problem.id,
       notesSnapshot: notesText,
@@ -162,7 +162,7 @@ export const NotesTab: React.FC<Props> = ({
           reviewData = await requestNotesReview(problem, notes, 1);
         } else {
           await new Promise((res) => setTimeout(res, 400));
-          reviewData = getMockReview(notes, settings.model || 'gemini-2.5-flash');
+          reviewData = getMockReview(notes, settings.model || 'gemini-flash-lite-latest');
         }
       }
 
@@ -177,7 +177,7 @@ export const NotesTab: React.FC<Props> = ({
       onProblemUpdated();
     } catch (err) {
       console.error('Failed to review notes:', err);
-      toast.error('Failed to submit notes for review. Please try again.');
+      toast.error(err instanceof Error ? err.message : 'Failed to submit notes for review. Please try again.');
     } finally {
       setIsReviewing(false);
     }
@@ -209,11 +209,10 @@ export const NotesTab: React.FC<Props> = ({
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`w-3.5 h-3.5 ${
-              star <= rating
+            className={`w-3.5 h-3.5 ${star <= rating
                 ? 'text-amber-400 fill-amber-400'
                 : 'text-slate-300 dark:text-slate-700'
-            }`}
+              }`}
           />
         ))}
       </div>
@@ -232,11 +231,10 @@ export const NotesTab: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setViewMode('write')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
-                  viewMode === 'write'
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${viewMode === 'write'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Write</span>
@@ -244,11 +242,10 @@ export const NotesTab: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setViewMode('preview')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
-                  viewMode === 'preview'
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${viewMode === 'preview'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                }`}
+                  }`}
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Preview</span>
@@ -278,11 +275,10 @@ export const NotesTab: React.FC<Props> = ({
           <div className="flex items-center gap-3">
             {/* Character counter / requirement */}
             <div
-              className={`text-xs font-mono font-medium ${
-                charCount >= 50
+              className={`text-xs font-mono font-medium ${charCount >= 50
                   ? 'text-slate-500 dark:text-slate-400'
                   : 'text-amber-600 dark:text-amber-400'
-              }`}
+                }`}
             >
               {charCount}/50 chars min
             </div>
@@ -293,11 +289,10 @@ export const NotesTab: React.FC<Props> = ({
                 type="button"
                 disabled={isReviewDisabled}
                 onClick={handleReviewNotes}
-                className={`px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
-                  isReviewDisabled
+                className={`px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${isReviewDisabled
                     ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                     : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs active:scale-98'
-                }`}
+                  }`}
               >
                 {isReviewing ? (
                   <>
@@ -386,11 +381,10 @@ export const NotesTab: React.FC<Props> = ({
                     <div className="flex flex-wrap items-center gap-3">
                       {/* Verdict Badge */}
                       <span
-                        className={`px-2.5 py-0.5 text-xs font-mono font-bold uppercase tracking-wider rounded border ${
-                          isSolid
+                        className={`px-2.5 py-0.5 text-xs font-mono font-bold uppercase tracking-wider rounded border ${isSolid
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
                             : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                        }`}
+                          }`}
                       >
                         {isSolid ? 'Solid' : 'Needs Work'}
                       </span>

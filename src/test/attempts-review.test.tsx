@@ -95,7 +95,7 @@ describe('FR-4 — Attempts and Code Review Loop Acceptance Criteria', () => {
       ],
       positives: ['Good formatting'],
       nextStep: 'Fix critical null check first.',
-      model: 'gemini-2.5-flash',
+      model: 'gemini-flash-lite-latest',
       createdAt: new Date().toISOString(),
     };
 
@@ -111,7 +111,7 @@ describe('FR-4 — Attempts and Code Review Loop Acceptance Criteria', () => {
         <AttemptsTab
           problem={sampleProblem}
           attempts={[attempt]}
-          onProblemUpdated={() => {}}
+          onProblemUpdated={() => { }}
         />
       </ToastProvider>
     );
@@ -139,7 +139,7 @@ describe('FR-4 — Attempts and Code Review Loop Acceptance Criteria', () => {
       issues: [{ severity: 'major', title: 'Slow', detail: 'Slow loop', suggestion: 'Use map' }],
       positives: ['Nice start'],
       nextStep: 'Fix loop',
-      model: 'gemini-2.5-flash',
+      model: 'gemini-flash-lite-latest',
       createdAt: new Date().toISOString(),
     };
 
@@ -155,7 +155,7 @@ describe('FR-4 — Attempts and Code Review Loop Acceptance Criteria', () => {
         <AttemptsTab
           problem={sampleProblem}
           attempts={[attempt]}
-          onProblemUpdated={() => {}}
+          onProblemUpdated={() => { }}
         />
       </ToastProvider>
     );
@@ -184,7 +184,7 @@ describe('FR-4 — Attempts and Code Review Loop Acceptance Criteria', () => {
       issues: [],
       positives: ['Clean'],
       nextStep: 'Try another problem',
-      model: 'gemini-2.5-flash',
+      model: 'gemini-flash-lite-latest',
       createdAt: new Date().toISOString(),
     };
 

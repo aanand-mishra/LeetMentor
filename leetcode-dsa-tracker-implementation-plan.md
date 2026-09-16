@@ -1,4 +1,4 @@
-# Implementation Plan — LeetCode DSA Tracker
+# Implementation Plan — Leetcode DSA Tracker
 
 **Companion to:** `leetcode-dsa-tracker-spec.md` (v1.0)
 **Audience:** the AI coding agent executing this build
@@ -142,7 +142,7 @@
 
 ## Phase 5 — Problem Detail Page Shell (§6 FR-3)
 
-- [x] Build the sticky header: number + title, external link icon to the LeetCode URL (`target="_blank" rel="noopener noreferrer"`), difficulty badge, status selector, star toggle, confidence control, edit/delete actions.
+- [x] Build the sticky header: number + title, external link icon to the Leetcode URL (`target="_blank" rel="noopener noreferrer"`), difficulty badge, status selector, star toggle, confidence control, edit/delete actions.
 - [x] Build the tab strip: Overview, Attempts (badge = attempt count), Mentor (badge = hint level), Notes (badge = latest review rating).
 - [x] Build the Overview tab: rendered markdown statement (collapsible if long), topic/pattern chips, time spent, user complexity claims, key dates (added/first attempt/solved), and a small activity timeline (attempts, hint unlocks, note reviews in chronological order).
 - [x] Reflect the active tab in the URL hash (`#overview`, `#attempts`, `#mentor`, `#notes`); confirm a hard refresh preserves the tab (FR-3.1).
