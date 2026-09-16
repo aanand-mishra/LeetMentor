@@ -1,10 +1,10 @@
 import { settingsRepo } from '../../db';
 import type { Problem, Attempt, CodeReview, NoteReview } from '../../types';
 import {
-  CODE_REVIEW_SYSTEM_INSTRUCTION,
+  buildCodeReviewSystemInstruction,
   buildCodeReviewPayload,
   CODE_REVIEW_RESPONSE_SCHEMA,
-  NOTES_REVIEW_SYSTEM_INSTRUCTION,
+  buildNotesReviewSystemInstruction,
   buildNotesReviewPayload,
   NOTES_REVIEW_RESPONSE_SCHEMA,
   buildMentorSystemInstruction,
@@ -32,12 +32,13 @@ export async function requestCodeReview(
   }
 
   const activeModel = settings.model || 'gemini-flash-lite-latest';
+  const humanLang = settings.responseLanguage || 'English';
   const userPayload = buildCodeReviewPayload(problem, attempt, previousAttempt);
 
   const rawReview = await dispatchGeminiRequest<Omit<CodeReview, 'model' | 'createdAt'>>({
     apiKey: settings.geminiApiKey,
     model: activeModel,
-    systemInstruction: CODE_REVIEW_SYSTEM_INSTRUCTION,
+    systemInstruction: buildCodeReviewSystemInstruction(humanLang),
     userPrompt: userPayload,
     temperature: settings.temperature ?? 0.4,
     responseMimeType: 'application/json',
@@ -82,9 +83,10 @@ export async function requestMentorHint(
     );
   }
 
-  let activeModel = settings.model || 'gemini-flash-lite-latest';
+  const activeModel = settings.model || 'gemini-flash-lite-latest';
   const lang = problem.language || settings.defaultLanguage || 'Python';
-  const systemInstruction = buildMentorSystemInstruction(level, lang);
+  const humanLang = settings.responseLanguage || 'English';
+  const systemInstruction = buildMentorSystemInstruction(level, lang, humanLang);
   const userPayload = buildMentorPayload(problem, latestAttempt);
 
   let markdownContent: string;
@@ -109,21 +111,17 @@ export async function requestMentorHint(
 
     if (is503 && activeModel !== 'gemini-1.5-flash') {
       console.warn(`Model ${activeModel} out of capacity (503). Retrying with gemini-1.5-flash...`);
-      try {
-        usedModel = 'gemini-1.5-flash';
-        markdownContent = await dispatchGeminiRequest<string>({
-          apiKey: settings.geminiApiKey,
-          model: usedModel,
-          systemInstruction,
-          userPrompt: userPayload,
-          temperature: settings.temperature ?? 0.4,
-          onQueueUpdate,
-        });
-        // Update user setting to prevent repeated 503 errors
-        await settingsRepo.update({ model: usedModel }).catch(() => {});
-      } catch (fallbackErr) {
-        throw fallbackErr;
-      }
+      usedModel = 'gemini-1.5-flash';
+      markdownContent = await dispatchGeminiRequest<string>({
+        apiKey: settings.geminiApiKey,
+        model: usedModel,
+        systemInstruction,
+        userPrompt: userPayload,
+        temperature: settings.temperature ?? 0.4,
+        onQueueUpdate,
+      });
+      // Update user setting to prevent repeated 503 errors
+      await settingsRepo.update({ model: usedModel }).catch(() => {});
     } else {
       throw err;
     }
@@ -158,12 +156,13 @@ export async function requestNotesReview(
   }
 
   const activeModel = settings.model || 'gemini-flash-lite-latest';
+  const humanLang = settings.responseLanguage || 'English';
   const userPayload = buildNotesReviewPayload(problem, notes, attemptCount);
 
   const rawResult = await dispatchGeminiRequest<Omit<NoteReview, 'id' | 'problemId' | 'notesSnapshot' | 'model' | 'createdAt'>>({
     apiKey: settings.geminiApiKey,
     model: activeModel,
-    systemInstruction: NOTES_REVIEW_SYSTEM_INSTRUCTION,
+    systemInstruction: buildNotesReviewSystemInstruction(humanLang),
     userPrompt: userPayload,
     temperature: settings.temperature ?? 0.4,
     responseMimeType: 'application/json',

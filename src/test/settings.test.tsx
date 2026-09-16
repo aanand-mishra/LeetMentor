@@ -202,4 +202,32 @@ describe('FR-8 — Settings & Data Management Acceptance Tests', () => {
       ).toBeInTheDocument();
     });
   });
+
+  it('verifies AI Output Human Language setting renders, defaults to English, and can be updated', async () => {
+    render(
+      <ThemeProvider>
+        <ToastProvider>
+          <SettingsPage />
+        </ToastProvider>
+      </ThemeProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/AI Output Human Language/i)).toBeInTheDocument();
+    });
+
+    const langInput = screen.getByLabelText(/AI Output Human Language/i) as HTMLInputElement;
+    expect(langInput.value).toBe('English');
+
+    // Click quick preset chip "Hinglish"
+    const hinglishChip = screen.getByRole('button', { name: 'Hinglish' });
+    fireEvent.click(hinglishChip);
+
+    await waitFor(async () => {
+      const stored = await settingsRepo.get();
+      expect(stored.responseLanguage).toBe('Hinglish');
+    });
+
+    expect(langInput.value).toBe('Hinglish');
+  });
 });

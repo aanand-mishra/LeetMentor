@@ -69,3 +69,13 @@
   color: #818cf8;
 }
 
+/* Code block syntax highlighting overrides to remove unwanted background/highlight bands */
+pre[class*="language-"],
+code[class*="language-"],
+.markdown-body pre code,
+.markdown-body pre {
+  background: transparent !important;
+  background-color: transparent !important;
+  text-shadow: none !important;
+}
+

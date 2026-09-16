@@ -17,6 +17,24 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+// Custom Prism theme that cleans up background colors and text-shadows
+// so code text renders cleanly on the container background without looking pre-selected/highlighted
+const customCodeTheme: { [key: string]: React.CSSProperties } = {
+  ...oneDark,
+  'code[class*="language-"]': {
+    ...oneDark['code[class*="language-"]'],
+    background: 'transparent',
+    backgroundColor: 'transparent',
+    textShadow: 'none',
+  },
+  'pre[class*="language-"]': {
+    ...oneDark['pre[class*="language-"]'],
+    background: 'transparent',
+    backgroundColor: 'transparent',
+    textShadow: 'none',
+  },
+};
+
 interface CodeBlockProps {
   language?: string;
   value: string;
@@ -77,14 +95,26 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
       <div className="overflow-x-auto text-xs font-mono select-text">
         <SyntaxHighlighter
           language={language || 'text'}
-          style={oneDark}
+          style={customCodeTheme}
           customStyle={{
             margin: 0,
             padding: '1.15rem 1rem',
             background: 'transparent',
+            backgroundColor: 'transparent',
             fontSize: '0.83rem',
             lineHeight: '1.65',
             fontFamily: 'JetBrains Mono, Fira Code, Menlo, Monaco, Courier New, monospace',
+            textShadow: 'none',
+          }}
+          codeTagProps={{
+            style: {
+              background: 'transparent',
+              backgroundColor: 'transparent',
+              textShadow: 'none',
+              fontFamily: 'inherit',
+              fontSize: 'inherit',
+              lineHeight: 'inherit',
+            },
           }}
           wrapLongLines={false}
         >

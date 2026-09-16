@@ -114,6 +114,24 @@ describe('Phase 11 — Gemini API Integration Layer Tests', () => {
     expect(instructionL4).toContain('Current hint level: 4');
   });
 
+  it('injects human responseLanguage into mentor and reviewer prompts', () => {
+    // English default should not have language requirement block
+    const defaultInstruction = buildMentorSystemInstruction(4, 'python', 'English');
+    expect(defaultInstruction).not.toContain('HUMAN LANGUAGE REQUIREMENT');
+
+    // Hinglish requirement
+    const hinglishInstruction = buildMentorSystemInstruction(4, 'python', 'Hinglish');
+    expect(hinglishInstruction).toContain('HUMAN LANGUAGE REQUIREMENT:');
+    expect(hinglishInstruction).toContain('Hinglish');
+    expect(hinglishInstruction).toContain('conversational Hindi written in Roman/Latin script');
+
+    // Nepali + English (Romanized) requirement
+    const nepaliInstruction = buildMentorSystemInstruction(2, 'cpp', 'Nepali+English(Romanized)');
+    expect(nepaliInstruction).toContain('HUMAN LANGUAGE REQUIREMENT:');
+    expect(nepaliInstruction).toContain('Nepali+English(Romanized)');
+    expect(nepaliInstruction).toContain('conversational Nepali written in Roman/Latin script');
+  });
+
   it('verifies code review and notes review response schemas match specifications', () => {
     expect(CODE_REVIEW_RESPONSE_SCHEMA.properties.verdict.enum).toEqual(['pass', 'revise']);
     expect(CODE_REVIEW_RESPONSE_SCHEMA.required).toContain('verdict');

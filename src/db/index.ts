@@ -45,6 +45,7 @@ export const DEFAULT_SETTINGS: Settings = {
   geminiApiKey: '',
   model: 'gemini-flash-lite-latest',
   defaultLanguage: 'python',
+  responseLanguage: 'English',
   theme: 'system',
   temperature: 0.4,
   dailyRequestCount: 0,

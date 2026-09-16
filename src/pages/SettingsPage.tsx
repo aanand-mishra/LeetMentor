@@ -34,6 +34,7 @@ export const SettingsPage: React.FC = () => {
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [apiKeyInput, setApiKeyInput] = useState('');
+  const [responseLangInput, setResponseLangInput] = useState('English');
   const [showKey, setShowKey] = useState(false);
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -77,6 +78,7 @@ export const SettingsPage: React.FC = () => {
     settingsRepo.get().then((data) => {
       setSettings(data);
       setApiKeyInput(data.geminiApiKey || '');
+      setResponseLangInput(data.responseLanguage || 'English');
       if (data.geminiApiKey) {
         loadModels(data.geminiApiKey);
       }
@@ -201,6 +203,13 @@ export const SettingsPage: React.FC = () => {
       console.error(`Failed to update ${key}:`, err);
       toast.error('Failed to update setting');
     }
+  };
+
+  // Save AI response human language (e.g. English, Hinglish, Nepali+English(Romanized))
+  const handleResponseLangSave = async (val: string) => {
+    const trimmed = val.trim() || 'English';
+    setResponseLangInput(trimmed);
+    await handleUpdateSetting('responseLanguage', trimmed);
   };
 
   // Debounced temperature slider update: waits 1.5 seconds and only notifies if actually changed
@@ -612,6 +621,71 @@ export const SettingsPage: React.FC = () => {
             <p className="text-[11px] text-slate-400">
               Dark mode is a first-class design target.
             </p>
+          </div>
+
+          {/* AI Output Human Language */}
+          <div className="space-y-2 md:col-span-2 p-3.5 rounded-xl bg-slate-100/60 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <label htmlFor="response-language" className="block text-xs font-bold text-slate-900 dark:text-slate-100">
+                  AI Output Human Language
+                </label>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Language used by AI Mentor hints, solutions, explanations, docstrings, and code comments.
+                </p>
+              </div>
+              <span className="text-[11px] text-slate-400 font-mono hidden sm:inline-block">
+                Active: <span className="font-semibold text-indigo-600 dark:text-indigo-400">{settings.responseLanguage || 'English'}</span>
+              </span>
+            </div>
+
+            <div className="pt-1">
+              <input
+                id="response-language"
+                type="text"
+                list="response-language-presets"
+                value={responseLangInput}
+                onChange={(e) => setResponseLangInput(e.target.value)}
+                onBlur={() => handleResponseLangSave(responseLangInput)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                  }
+                }}
+                placeholder="e.g. English, Hinglish, Nepali+English(Romanized)"
+                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <datalist id="response-language-presets">
+                <option value="English" />
+                <option value="Hinglish" />
+                <option value="Nepali+English(Romanized)" />
+              </datalist>
+            </div>
+
+            {/* Quick Presets */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="text-[11px] font-medium text-slate-400 mr-1">Popular options:</span>
+              {[
+                'English',
+                'Hinglish',
+                'Nepali+English(Romanized)',
+              ].map((langOption) => {
+                const isSelected = (settings.responseLanguage || 'English').toLowerCase() === langOption.toLowerCase();
+                return (
+                  <button
+                    key={langOption}
+                    type="button"
+                    onClick={() => handleResponseLangSave(langOption)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all ${isSelected
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                      }`}
+                  >
+                    {langOption}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Temperature Slider */}

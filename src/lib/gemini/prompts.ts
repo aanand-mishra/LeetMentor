@@ -115,6 +115,16 @@ export const CODE_REVIEW_RESPONSE_SCHEMA = {
   required: ['verdict', 'summary', 'correctness', 'complexity', 'issues', 'positives', 'nextStep'],
 };
 
+export function buildCodeReviewSystemInstruction(responseLanguage: string = 'English'): string {
+  const lang = responseLanguage.trim();
+  const languageGuidance =
+    lang && lang.toLowerCase() !== 'english'
+      ? `\n\nHUMAN LANGUAGE REQUIREMENT:
+All natural language explanation fields in the JSON response (summary, issue titles, details, suggestions, positives, nextStep) must be written in ${lang} (e.g., if Hinglish or Nepali+English(Romanized), use Romanized text with standard English technical terms).`
+      : '';
+  return `${CODE_REVIEW_SYSTEM_INSTRUCTION}${languageGuidance}`;
+}
+
 // ==========================================
 // Notes Reviewer Prompt (§7.5)
 // ==========================================
@@ -146,6 +156,16 @@ Hard rules:
 - Be honest. If the notes are weak, say so plainly and specifically. Do not inflate
   the rating to be encouraging.
 - Always include at least one entry in "strengths" if anything is genuinely correct.`;
+
+export function buildNotesReviewSystemInstruction(responseLanguage: string = 'English'): string {
+  const lang = responseLanguage.trim();
+  const languageGuidance =
+    lang && lang.toLowerCase() !== 'english'
+      ? `\n\nHUMAN LANGUAGE REQUIREMENT:
+All natural language explanation fields in the JSON response (corrections, gaps, strengths, keyTakeaway, recallQuestions) must be written in ${lang} (e.g., if Hinglish or Nepali+English(Romanized), use Romanized text with standard English technical terms).`
+      : '';
+  return `${NOTES_REVIEW_SYSTEM_INSTRUCTION}${languageGuidance}`;
+}
 
 export function buildNotesReviewPayload(
   problem: Problem,
@@ -204,10 +224,25 @@ export const NOTES_REVIEW_RESPONSE_SCHEMA = {
 // ==========================================
 // Mentor Prompt (§7.6)
 // ==========================================
-export function buildMentorSystemInstruction(level: 1 | 2 | 3 | 4, language: string): string {
+export function buildMentorSystemInstruction(
+  level: 1 | 2 | 3 | 4,
+  language: string,
+  responseLanguage: string = 'English'
+): string {
+  const lang = responseLanguage.trim();
+  const languageGuidance =
+    lang && lang.toLowerCase() !== 'english'
+      ? `\n\nHUMAN LANGUAGE REQUIREMENT:
+You must communicate and provide all your conversational explanations, hints, guiding questions, pseudocode descriptions, code comments, and docstrings in ${lang}.
+- For example, if Hinglish: use natural, conversational Hindi written in Roman/Latin script mixed with English technical terms.
+- For example, if Nepali+English(Romanized): use natural, conversational Nepali written in Roman/Latin script mixed with English technical terms.
+- Standard programming keywords, variable identifiers, function names, and code syntax itself must remain standard valid ${language}, but all explanatory commentary, code comments (# / //), docstrings, and markdown descriptions must be written in ${lang}.
+- Keep markdown section headings recognizable (e.g. "## Complexity Analysis", "## Edge Cases", "## Common Pitfalls", "## Related Problems") so the UI can format and badge them properly.`
+      : '';
+
   return `You are a DSA mentor helping a student solve a Leetcode problem. You will be given a
 problem and a HINT LEVEL. Answer ONLY at the requested level. Never reveal anything
-belonging to a higher level, even if the student's question seems to invite it.
+belonging to a higher level, even if the student's question seems to invite it.${languageGuidance}
 
 LEVEL 1 — NUDGE
 Restate the core challenge in one sentence. Then ask 1-2 guiding questions about the
