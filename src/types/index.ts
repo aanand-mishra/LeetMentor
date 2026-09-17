@@ -106,6 +106,7 @@ export interface Settings {
   dailyRequestCount: number; // local counter, resets at local midnight
   dailyRequestDate: string; // YYYY-MM-DD
   lastExportDate?: string | null;
+  hasConfiguredApiKey?: boolean;
 }
 
 export type SortOption =

@@ -55,9 +55,13 @@ export const SettingsPage: React.FC = () => {
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const [isDeletingAll, setIsDeletingAll] = useState(false);
 
+  const isMountedRef = useRef(true);
+
   // Load settings on mount
   useEffect(() => {
+    isMountedRef.current = true;
     settingsRepo.get().then((data) => {
+      if (!isMountedRef.current) return;
       setSettings(data);
       setApiKeyInput(data.geminiApiKey || '');
       setResponseLangInput(data.responseLanguage || 'English');
@@ -65,6 +69,9 @@ export const SettingsPage: React.FC = () => {
         loadModels(data.geminiApiKey);
       }
     });
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   // Fetch models using API key (§7.2, FR-8.3)
@@ -74,12 +81,18 @@ export const SettingsPage: React.FC = () => {
     setModelsError(null);
     try {
       const models = await fetchAvailableModels(key);
-      setAvailableModels(models);
+      if (isMountedRef.current) {
+        setAvailableModels(models);
+      }
     } catch (err: unknown) {
-      console.error('Failed to load models:', err);
-      setModelsError(err instanceof Error ? err.message : 'Could not fetch models.');
+      if (isMountedRef.current) {
+        console.error('Failed to load models:', err);
+        setModelsError(err instanceof Error ? err.message : 'Could not fetch models.');
+      }
     } finally {
-      setIsLoadingModels(false);
+      if (isMountedRef.current) {
+        setIsLoadingModels(false);
+      }
     }
   };
 
@@ -87,8 +100,19 @@ export const SettingsPage: React.FC = () => {
   const handleSaveApiKey = async () => {
     if (!settings) return;
     try {
-      await settingsRepo.update({ geminiApiKey: apiKeyInput.trim() });
-      setSettings((prev) => (prev ? { ...prev, geminiApiKey: apiKeyInput.trim() } : null));
+      await settingsRepo.update({
+        geminiApiKey: apiKeyInput.trim(),
+        hasConfiguredApiKey: true,
+      });
+      setSettings((prev) =>
+        prev
+          ? {
+              ...prev,
+              geminiApiKey: apiKeyInput.trim(),
+              hasConfiguredApiKey: true,
+            }
+          : null
+      );
       toast.success('Gemini API key saved');
       setTestResult(null);
       if (apiKeyInput.trim()) {
@@ -285,6 +309,12 @@ export const SettingsPage: React.FC = () => {
 
     try {
       setIsDeletingAll(true);
+      try {
+        sessionStorage.removeItem('dsa_welcome_banner_dismissed');
+        localStorage.removeItem('dsa_welcome_banner_dismissed');
+      } catch {
+        // ignore
+      }
       await clearAllLocalData();
       toast.success('All data permanently deleted.');
       setShowDeleteAllModal(false);

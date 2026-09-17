@@ -185,6 +185,8 @@ export const ProblemForm: React.FC<Props> = ({
 
     const parsedNumber = number.trim() ? parseInt(number.trim(), 10) : null;
     const parsedTime = timeSpentMinutes.trim() ? parseInt(timeSpentMinutes.trim(), 10) : null;
+    const finalStatus =
+      parsedTime !== null && !isNaN(parsedTime) && parsedTime >= 0 ? 'Solved' : status;
 
     await onSubmit({
       number: !isNaN(parsedNumber as number) && (parsedNumber as number) > 0 ? parsedNumber : null,
@@ -194,10 +196,10 @@ export const ProblemForm: React.FC<Props> = ({
       difficulty,
       topics,
       patterns,
-      status,
+      status: finalStatus,
       language: language.trim() || 'python',
       timeSpentMinutes:
-        status === 'Solved' && !isNaN(parsedTime as number) && (parsedTime as number) >= 0
+        finalStatus === 'Solved' && !isNaN(parsedTime as number) && (parsedTime as number) >= 0
           ? parsedTime
           : null,
     });

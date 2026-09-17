@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db, problemsRepo } from '../db';
+import { db, problemsRepo, settingsRepo } from '../db';
 import { SummaryBar } from '../components/home/SummaryBar';
 import { FilterPanel } from '../components/home/FilterPanel';
 import { ProblemTable } from '../components/home/ProblemTable';
+import { WelcomeGuideBanner } from '../components/home/WelcomeGuideBanner';
 import {
   ZeroProblemsEmptyState,
   NoFilterMatchesEmptyState,
@@ -13,6 +14,38 @@ import type { Status, Difficulty } from '../types';
 
 export const HomePage: React.FC = () => {
   const { filters, page, setFilters, clearFilters } = useUrlFilters();
+
+  // Query settings to determine if welcome/setup guide banner should be displayed
+  const settings = useLiveQuery(() => db.settings.get('current'), []);
+  const [isBannerDismissed, setIsBannerDismissed] = useState<boolean>(() => {
+    try {
+      return (
+        sessionStorage.getItem('dsa_welcome_banner_dismissed') === 'true' ||
+        localStorage.getItem('dsa_welcome_banner_dismissed') === 'true'
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  const handleDismissBanner = () => {
+    try {
+      sessionStorage.setItem('dsa_welcome_banner_dismissed', 'true');
+      localStorage.setItem('dsa_welcome_banner_dismissed', 'true');
+    } catch {
+      // Ignore
+    }
+    settingsRepo.update({ hasConfiguredApiKey: true }).catch(() => {});
+    setIsBannerDismissed(true);
+  };
+
+  // Show banner only once until the API key is saved (or dismissed).
+  // If later the user clears their key, hasConfiguredApiKey remains true, so it will not come back.
+  const showWelcomeBanner =
+    !isBannerDismissed &&
+    settings !== undefined &&
+    !settings.hasConfiguredApiKey &&
+    (!settings.geminiApiKey || settings.geminiApiKey.trim() === '');
 
   // Live query all problems for summary stats & topic/pattern index
   const rawProblems = useLiveQuery(() => db.problems.toArray(), []);
@@ -37,18 +70,6 @@ export const HomePage: React.FC = () => {
 
   const loading = filteredProblems === undefined;
   const currentProblems = filteredProblems ?? [];
-
-  // Live query attempt counts for fast lookup on table rows
-  const rawAttempts = useLiveQuery(() => db.attempts.toArray(), []);
-  const attemptsCountMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    if (rawAttempts) {
-      for (const att of rawAttempts) {
-        map[att.problemId] = (map[att.problemId] || 0) + 1;
-      }
-    }
-    return map;
-  }, [rawAttempts]);
 
   // Distinct topics and patterns across the dataset
   const allAvailableTopics = useMemo(() => {
@@ -86,6 +107,11 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {/* Welcome & Quick Start Guide Banner */}
+      {showWelcomeBanner && (
+        <WelcomeGuideBanner onDismiss={handleDismissBanner} />
+      )}
+
       {/* Summary Bar */}
       {hasAnyProblems && (
         <SummaryBar
@@ -128,7 +154,6 @@ export const HomePage: React.FC = () => {
       ) : (
         <ProblemTable
           problems={currentProblems}
-          attemptsCountMap={attemptsCountMap}
           onToggleStar={handleToggleStar}
           page={page}
           pageSize={25}

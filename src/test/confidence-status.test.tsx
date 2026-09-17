@@ -47,6 +47,26 @@ describe('FR-7 — Confidence Rating and Status Logic Acceptance Tests', () => {
     expect(screen.getByLabelText(/5: Fluent — I could teach this/i)).toBeInTheDocument();
   });
 
+  it('renders "Unrated" text without dots when confidence is null in display mode', () => {
+    const { container } = render(<ConfidenceDots confidence={null} />);
+    expect(screen.getByText('Unrated')).toBeInTheDocument();
+    expect(container.querySelectorAll('span.rounded-full')).toHaveLength(0);
+  });
+
+  it('renders 5 dots without numeric text when confidence is rated in display mode', () => {
+    const { container } = render(<ConfidenceDots confidence={3} />);
+    // Should NOT display numeric text like "3/5"
+    expect(screen.queryByText('3/5')).not.toBeInTheDocument();
+    // Should display 5 dots (3 filled amber, 2 unfilled slate)
+    const dots = container.querySelectorAll('span.rounded-full');
+    expect(dots).toHaveLength(5);
+    expect(dots[0].className).toContain('bg-amber-500');
+    expect(dots[1].className).toContain('bg-amber-500');
+    expect(dots[2].className).toContain('bg-amber-500');
+    expect(dots[3].className).toContain('bg-slate-200');
+    expect(dots[4].className).toContain('bg-slate-200');
+  });
+
   it('auto-transitions Not Started to In Progress on first attempt save and sets dateFirstAttempt (FR-7.2)', async () => {
     expect(sampleProblem.status).toBe('Not Started');
     expect(sampleProblem.dateFirstAttempt).toBeNull();
@@ -328,5 +348,67 @@ describe('FR-7 — Confidence Rating and Status Logic Acceptance Tests', () => {
     // It MUST remain on Step 2, not be kicked back to Step 1
     expect(screen.getByText(/Step 2 of 2: Confidence/i)).toBeInTheDocument();
     expect(screen.queryByText(/Step 1 of 2: Time Spent/i)).not.toBeInTheDocument();
+  });
+
+  it('setting time spent auto-sets status to Solved with manuallyMarkedSolved=true when no AI verdict is pass', async () => {
+    // Problem starts as In Progress without attempts
+    expect(sampleProblem.status).toBe('Not Started');
+
+    // User logs time spent
+    const updated = await problemsRepo.update(sampleProblem.id, { timeSpentMinutes: 35 });
+
+    expect(updated.status).toBe('Solved');
+    expect(updated.timeSpentMinutes).toBe(35);
+    expect(updated.dateSolved).toBeTruthy();
+    expect(updated.manuallyMarkedSolved).toBe(true);
+
+    const stored = await db.problems.get(sampleProblem.id);
+    expect(stored?.status).toBe('Solved');
+    expect(stored?.manuallyMarkedSolved).toBe(true);
+  });
+
+  it('setting time spent on a problem solved after AI verdict=pass keeps clean Solved status (manuallyMarkedSolved=false)', async () => {
+    // Attach an attempt with passing AI review
+    const attempt = await attemptsRepo.create({
+      problemId: sampleProblem.id,
+      code: 'def solve(): return True',
+      language: 'python',
+    });
+
+    await attemptsRepo.attachReview(attempt.id, {
+      verdict: 'pass',
+      summary: 'Optimal solution',
+      correctness: { status: 'correct', failingCases: [] },
+      complexity: {
+        time: 'O(N)',
+        space: 'O(1)',
+        optimalTime: 'O(N)',
+        optimalSpace: 'O(1)',
+        isOptimal: true,
+      },
+      issues: [],
+      positives: ['Clean'],
+      nextStep: 'Complete',
+      model: 'gemini-1.5-flash',
+      createdAt: new Date().toISOString(),
+    });
+
+    // Mark solved cleanly as done by AI pass review
+    await problemsRepo.update(sampleProblem.id, {
+      status: 'Solved',
+      dateSolved: new Date().toISOString(),
+      manuallyMarkedSolved: false,
+    });
+
+    // Now user sets time spent
+    const updated = await problemsRepo.update(sampleProblem.id, { timeSpentMinutes: 45 });
+
+    expect(updated.status).toBe('Solved');
+    expect(updated.timeSpentMinutes).toBe(45);
+    expect(updated.manuallyMarkedSolved).toBe(false);
+
+    const stored = await db.problems.get(sampleProblem.id);
+    expect(stored?.status).toBe('Solved');
+    expect(stored?.manuallyMarkedSolved).toBe(false);
   });
 });

@@ -1,14 +1,23 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import type { Problem } from '../../types';
 import { DifficultyBadge, StatusBadge, UnassistedBadge } from '../common/Badges';
 import { ConfidenceDots } from '../common/ConfidenceDots';
 
+export const formatTimeSpent = (minutes: number | null | undefined): string => {
+  if (minutes === null || minutes === undefined) return '—';
+  if (minutes === 0) return '0m';
+  if (minutes < 60) return `${minutes}m`;
+  const hrs = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  if (remainingMins === 0) return `${hrs}h`;
+  return `${hrs}h ${remainingMins}m`;
+};
+
 interface Props {
   problems: Problem[];
-  attemptsCountMap: Record<string, number>;
   onToggleStar: (problemId: string, currentStarred: boolean, e: React.MouseEvent) => void;
   page: number;
   pageSize: number;
@@ -17,7 +26,6 @@ interface Props {
 
 export const ProblemTable: React.FC<Props> = ({
   problems,
-  attemptsCountMap,
   onToggleStar,
   page,
   pageSize,
@@ -51,14 +59,13 @@ export const ProblemTable: React.FC<Props> = ({
               <th className="w-24 px-3 py-3">Difficulty</th>
               <th className="px-3 py-3">Topics</th>
               <th className="w-28 px-3 py-3">Status</th>
-              <th className="w-28 px-3 py-3">Confidence</th>
-              <th className="w-20 px-3 py-3 text-center">Attempts</th>
+              <th className="w-36 px-3 py-3">Confidence</th>
+              <th className="w-28 px-3 py-3 text-center">Time Spent</th>
               <th className="w-32 px-3 py-3 text-right">Last Activity</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
             {paginatedProblems.map((prob) => {
-              const attemptsCount = attemptsCountMap[prob.id] ?? 0;
               const isUnassisted = prob.status === 'Solved' && prob.hintsUsed === 0;
 
               return (
@@ -141,14 +148,26 @@ export const ProblemTable: React.FC<Props> = ({
                     />
                   </td>
 
-                  {/* Confidence */}
+                  {/* Confidence: dots */}
                   <td className="px-3 py-3">
                     <ConfidenceDots confidence={prob.confidence} />
                   </td>
 
-                  {/* Attempts count */}
+                  {/* Time Spent (replaces attempts) */}
                   <td className="px-3 py-3 text-center font-mono text-xs text-slate-600 dark:text-slate-400">
-                    {attemptsCount}
+                    <span
+                      className="inline-flex items-center justify-center gap-1"
+                      title={
+                        prob.timeSpentMinutes !== null && prob.timeSpentMinutes !== undefined
+                          ? `${prob.timeSpentMinutes} min${prob.timeSpentMinutes === 1 ? '' : 's'} spent`
+                          : 'No time recorded'
+                      }
+                    >
+                      {prob.timeSpentMinutes !== null && prob.timeSpentMinutes !== undefined && (
+                        <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                      )}
+                      <span>{formatTimeSpent(prob.timeSpentMinutes)}</span>
+                    </span>
                   </td>
 
                   {/* Last Activity */}
@@ -209,6 +228,15 @@ export const ProblemTable: React.FC<Props> = ({
                   manuallyMarkedSolved={prob.manuallyMarkedSolved}
                 />
                 <ConfidenceDots confidence={prob.confidence} />
+                {prob.timeSpentMinutes !== null && prob.timeSpentMinutes !== undefined && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded"
+                    title={`${prob.timeSpentMinutes} min${prob.timeSpentMinutes === 1 ? '' : 's'} spent`}
+                  >
+                    <Clock className="w-3 h-3 text-slate-400" />
+                    {formatTimeSpent(prob.timeSpentMinutes)}
+                  </span>
+                )}
               </div>
 
               {prob.topics && prob.topics.length > 0 && (

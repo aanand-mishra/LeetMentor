@@ -316,4 +316,78 @@ describe('FR-2 — Home Page Acceptance Criteria', () => {
     // Spec requires interaction under 100ms
     expect(duration).toBeLessThan(100);
   });
+
+  it('displays confidence value/dots and replaces attempts with time spent in problem table', async () => {
+    // Problem 1: Rated confidence 4, 75 minutes spent
+    await problemsRepo.create({
+      number: 1,
+      title: 'Two Sum With Time',
+      url: null,
+      statement: '',
+      difficulty: 'Easy',
+      topics: ['Array'],
+      patterns: [],
+      status: 'Solved',
+      confidence: 4,
+      timeSpentMinutes: 75,
+      hintsUsed: 0,
+      starred: false,
+      userTimeComplexity: null,
+      userSpaceComplexity: null,
+      notes: '',
+      language: 'python',
+      dateFirstAttempt: null,
+      dateSolved: new Date().toISOString(),
+    });
+
+    // Problem 2: Unrated confidence, no time spent
+    await problemsRepo.create({
+      number: 2,
+      title: 'Add Two Numbers Unrated',
+      url: null,
+      statement: '',
+      difficulty: 'Medium',
+      topics: ['Linked List'],
+      patterns: [],
+      status: 'Not Started',
+      confidence: null,
+      timeSpentMinutes: null,
+      hintsUsed: 0,
+      starred: false,
+      userTimeComplexity: null,
+      userSpaceComplexity: null,
+      notes: '',
+      language: 'python',
+      dateFirstAttempt: null,
+      dateSolved: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <ToastProvider>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+          </Routes>
+        </ToastProvider>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Two Sum With Time')[0]).toBeInTheDocument();
+      expect(screen.getAllByText('Add Two Numbers Unrated')[0]).toBeInTheDocument();
+    });
+
+    // Table header should contain "Time Spent", and not "Attempts"
+    expect(screen.getByRole('columnheader', { name: /Time Spent/i })).toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: /^Attempts$/i })).not.toBeInTheDocument();
+
+    // Problem 1 (confidence: 4) should show dots (not number text "4/5") and time spent "1h 15m"
+    expect(screen.queryByText('4/5')).not.toBeInTheDocument();
+    expect(screen.getAllByLabelText('Confidence: 4 of 5')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('1h 15m')[0]).toBeInTheDocument();
+
+    // Problem 2 (confidence: null) should show "Unrated" text (no dots) and "—"
+    expect(screen.getAllByText('Unrated').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+  });
 });

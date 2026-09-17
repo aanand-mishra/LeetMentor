@@ -101,4 +101,18 @@ describe('Unit utilities: diff and import merge', () => {
     expect(missingProblems.valid).toBe(false);
     expect(missingProblems.error).toContain('problems array is missing');
   });
+
+  it('formatTimeSpent handles null, undefined, 0, minutes < 60, exact hours, and mixed hours/minutes', async () => {
+    const { formatTimeSpent } = await import('../components/home/ProblemTable');
+
+    expect(formatTimeSpent(null)).toBe('—');
+    expect(formatTimeSpent(undefined)).toBe('—');
+    expect(formatTimeSpent(0)).toBe('0m');
+    expect(formatTimeSpent(15)).toBe('15m');
+    expect(formatTimeSpent(59)).toBe('59m');
+    expect(formatTimeSpent(60)).toBe('1h');
+    expect(formatTimeSpent(75)).toBe('1h 15m');
+    expect(formatTimeSpent(120)).toBe('2h');
+    expect(formatTimeSpent(135)).toBe('2h 15m');
+  });
 });

@@ -52,6 +52,7 @@ const DEFAULT_SETTINGS: Settings = {
   dailyRequestCount: 0,
   dailyRequestDate: getTodayDateString(),
   lastExportDate: null,
+  hasConfiguredApiKey: false,
 };
 
 // ==========================================
@@ -60,10 +61,33 @@ const DEFAULT_SETTINGS: Settings = {
 export const problemsRepo = {
   async create(data: Omit<Problem, 'id' | 'dateAdded' | 'updatedAt'>): Promise<Problem> {
     const now = new Date().toISOString();
+    let status = data.status;
+    let manuallyMarkedSolved = data.manuallyMarkedSolved;
+    let dateSolved = data.dateSolved;
+
+    // When time spent is set, auto-set status to Solved
+    if (
+      data.timeSpentMinutes !== undefined &&
+      data.timeSpentMinutes !== null &&
+      data.timeSpentMinutes >= 0
+    ) {
+      status = 'Solved';
+      if (manuallyMarkedSolved === undefined) {
+        // Without an AI review verdict pass, it's manually solved*
+        manuallyMarkedSolved = true;
+      }
+      if (!dateSolved) {
+        dateSolved = now;
+      }
+    }
+
     const problem: Problem = {
       ...data,
       id: generateUuid(),
       title: data.title.trim(),
+      status,
+      manuallyMarkedSolved,
+      dateSolved,
       dateAdded: now,
       updatedAt: now,
     };
@@ -77,10 +101,33 @@ export const problemsRepo = {
       throw new Error(`Problem with id ${id} not found`);
     }
 
+    const updates: Partial<Problem> = { ...data };
+
+    // When time spent is set, auto-set status to Solved
+    if (
+      updates.timeSpentMinutes !== undefined &&
+      updates.timeSpentMinutes !== null &&
+      updates.timeSpentMinutes >= 0
+    ) {
+      // Check if there was an AI verdict as pass or solved set by AI
+      const attempts = await db.attempts.where('problemId').equals(id).toArray();
+      const hasPassingReview = attempts.some((a) => a.review?.verdict === 'pass');
+      const isSolvedByAi =
+        hasPassingReview || (existing.status === 'Solved' && existing.manuallyMarkedSolved === false);
+
+      updates.status = 'Solved';
+      if (updates.manuallyMarkedSolved === undefined) {
+        updates.manuallyMarkedSolved = !isSolvedByAi;
+      }
+      if (!updates.dateSolved && !existing.dateSolved) {
+        updates.dateSolved = new Date().toISOString();
+      }
+    }
+
     const updated: Problem = {
       ...existing,
-      ...data,
-      title: data.title !== undefined ? data.title.trim() : existing.title,
+      ...updates,
+      title: updates.title !== undefined ? updates.title.trim() : existing.title,
       updatedAt: new Date().toISOString(),
     };
 
@@ -479,9 +526,14 @@ export const settingsRepo = {
     return db.transaction('rw', db.settings, async () => {
       const existing = await db.settings.get('current');
       const current = existing ? { ...DEFAULT_SETTINGS, ...existing } : DEFAULT_SETTINGS;
+      const isConfiguringKey =
+        partial.geminiApiKey !== undefined && partial.geminiApiKey.trim().length > 0;
       const updated: Settings = {
         ...current,
         ...partial,
+        hasConfiguredApiKey:
+          partial.hasConfiguredApiKey ??
+          (isConfiguringKey ? true : current.hasConfiguredApiKey ?? false),
         key: 'current',
       };
       await db.settings.put(updated);
@@ -508,6 +560,12 @@ export const settingsRepo = {
 // Database utilities (Clear and Danger Zone)
 // ==========================================
 export async function clearAllLocalData(): Promise<void> {
+  try {
+    sessionStorage.removeItem('dsa_welcome_banner_dismissed');
+    localStorage.removeItem('dsa_welcome_banner_dismissed');
+  } catch {
+    // Ignore environments where storage is not available
+  }
   await db.transaction(
     'rw',
     [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.settings],
