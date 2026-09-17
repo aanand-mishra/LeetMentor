@@ -12,7 +12,7 @@ import type {
 } from '../types';
 import { generateUuid } from '../utils/uuid';
 
-export class DSATrackerDB extends Dexie {
+class DSATrackerDB extends Dexie {
   problems!: Table<Problem, string>;
   attempts!: Table<Attempt, string>;
   mentorMessages!: Table<MentorMessage, string>;
@@ -22,7 +22,8 @@ export class DSATrackerDB extends Dexie {
   constructor() {
     super('dsa-tracker');
     this.version(1).stores({
-      problems: 'id, number, title, difficulty, status, confidence, dateAdded, dateSolved, updatedAt, *topics',
+      problems:
+        'id, number, title, difficulty, status, confidence, dateAdded, dateSolved, updatedAt, *topics',
       attempts: 'id, problemId, attemptNumber, createdAt',
       mentorMessages: 'id, problemId, level, createdAt',
       noteReviews: 'id, problemId, createdAt',
@@ -34,18 +35,20 @@ export class DSATrackerDB extends Dexie {
 export const db = new DSATrackerDB();
 
 // Helper to get today's date in YYYY-MM-DD
-export function getTodayDateString(): string {
+function getTodayDateString(): string {
   const now = new Date();
   return now.toISOString().split('T')[0];
 }
 
 // Default Settings
-export const DEFAULT_SETTINGS: Settings = {
+const DEFAULT_SETTINGS: Settings = {
   key: 'current',
   geminiApiKey: '',
   model: 'gemini-flash-lite-latest',
   defaultLanguage: 'python',
   responseLanguage: 'English',
+  sttModel: 'tiny',
+  sttProvider: 'gemini',
   theme: 'system',
   temperature: 0.4,
   dailyRequestCount: 0,
@@ -91,12 +94,16 @@ export const problemsRepo = {
    * Cascading delete inside a Dexie transaction (NFR-4, FR-1.5)
    */
   async delete(id: string): Promise<void> {
-    await db.transaction('rw', [db.problems, db.attempts, db.mentorMessages, db.noteReviews], async () => {
-      await db.problems.delete(id);
-      await db.attempts.where('problemId').equals(id).delete();
-      await db.mentorMessages.where('problemId').equals(id).delete();
-      await db.noteReviews.where('problemId').equals(id).delete();
-    });
+    await db.transaction(
+      'rw',
+      [db.problems, db.attempts, db.mentorMessages, db.noteReviews],
+      async () => {
+        await db.problems.delete(id);
+        await db.attempts.where('problemId').equals(id).delete();
+        await db.mentorMessages.where('problemId').equals(id).delete();
+        await db.noteReviews.where('problemId').equals(id).delete();
+      }
+    );
   },
 
   async getById(id: string): Promise<Problem | undefined> {
@@ -122,8 +129,20 @@ export const problemsRepo = {
       const tokens = params.query.toLowerCase().trim().split(/\s+/).filter(Boolean);
       items = items.filter((p) => {
         const acronyms = [
-          ...(p.topics || []).map((t) => t.split(/\s+/).map((w) => w[0]).join('').toLowerCase()),
-          ...(p.patterns || []).map((pt) => pt.split(/\s+/).map((w) => w[0]).join('').toLowerCase()),
+          ...(p.topics || []).map((t) =>
+            t
+              .split(/\s+/)
+              .map((w) => w[0])
+              .join('')
+              .toLowerCase()
+          ),
+          ...(p.patterns || []).map((pt) =>
+            pt
+              .split(/\s+/)
+              .map((w) => w[0])
+              .join('')
+              .toLowerCase()
+          ),
         ];
         const textFields = [
           p.title.toLowerCase(),
@@ -164,7 +183,9 @@ export const problemsRepo = {
     // Confidence
     if (params.confidence && params.confidence.length > 0) {
       const hasUnrated = params.confidence.includes('unrated');
-      const numericRatings = new Set(params.confidence.filter((c): c is 1 | 2 | 3 | 4 | 5 => c !== 'unrated'));
+      const numericRatings = new Set(
+        params.confidence.filter((c): c is 1 | 2 | 3 | 4 | 5 => c !== 'unrated')
+      );
 
       items = items.filter((p) => {
         if (p.confidence === null) return hasUnrated;
@@ -205,7 +226,8 @@ export const problemsRepo = {
     }
 
     // 3. Sorting (FR-2.4 review queue default sort: confidence asc, then dateSolved asc)
-    const sort = params.reviewQueueOnly && !params.sort ? 'confidence_asc' : params.sort || 'dateAdded_desc';
+    const sort =
+      params.reviewQueueOnly && !params.sort ? 'confidence_asc' : params.sort || 'dateAdded_desc';
 
     items.sort((a, b) => {
       switch (sort) {
@@ -288,10 +310,7 @@ export const attemptsRepo = {
   }): Promise<Attempt> {
     return db.transaction('rw', [db.attempts, db.problems], async () => {
       // Find max existing attemptNumber
-      const existing = await db.attempts
-        .where('problemId')
-        .equals(data.problemId)
-        .toArray();
+      const existing = await db.attempts.where('problemId').equals(data.problemId).toArray();
 
       const maxNumber = existing.reduce((max, curr) => Math.max(max, curr.attemptNumber), 0);
       const attemptNumber = maxNumber + 1;
@@ -491,12 +510,16 @@ export const settingsRepo = {
 // Database utilities (Clear and Danger Zone)
 // ==========================================
 export async function clearAllLocalData(): Promise<void> {
-  await db.transaction('rw', [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.settings], async () => {
-    await db.problems.clear();
-    await db.attempts.clear();
-    await db.mentorMessages.clear();
-    await db.noteReviews.clear();
-    await db.settings.clear();
-    await db.settings.put(DEFAULT_SETTINGS);
-  });
+  await db.transaction(
+    'rw',
+    [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.settings],
+    async () => {
+      await db.problems.clear();
+      await db.attempts.clear();
+      await db.mentorMessages.clear();
+      await db.noteReviews.clear();
+      await db.settings.clear();
+      await db.settings.put(DEFAULT_SETTINGS);
+    }
+  );
 }

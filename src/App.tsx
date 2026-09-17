@@ -45,7 +45,7 @@ const AppContent: React.FC = () => {
   );
 };
 
-export const App: React.FC = () => {
+const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <ThemeProvider>

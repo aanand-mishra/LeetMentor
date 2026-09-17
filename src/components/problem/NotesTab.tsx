@@ -14,11 +14,21 @@ import {
   Edit3,
   Lightbulb,
   RotateCw,
+  Mic,
 } from 'lucide-react';
 import type { Problem, NoteReview } from '../../types';
 import { problemsRepo, noteReviewsRepo, settingsRepo } from '../../db';
 import { requestNotesReview } from '../../lib/gemini/client';
 import { useToast } from '../../hooks/useToast';
+import { useVoiceDictation } from '../../hooks/useVoiceDictation';
+import { VoiceDictateButton } from './VoiceDictateButton';
+import {
+  DEFAULT_STT_MODEL_ID,
+  DEFAULT_TRANSCRIPTION_PROVIDER,
+  normalizeSttModelId,
+  normalizeTranscriptionProvider,
+  type TranscriptionProvider,
+} from '../../lib/voice/stt';
 
 interface Props {
   problem: Problem;
@@ -47,8 +57,13 @@ export const NotesTab: React.FC<Props> = ({
   const [isReviewing, setIsReviewing] = useState(false);
   const [copiedTakeawayId, setCopiedTakeawayId] = useState<string | null>(null);
   const [expandedReviews, setExpandedReviews] = useState<Record<string, boolean>>({});
+  const [sttModelId, setSttModelId] = useState<string>(DEFAULT_STT_MODEL_ID);
+  const [sttProvider, setSttProvider] = useState<TranscriptionProvider>(
+    DEFAULT_TRANSCRIPTION_PROVIDER
+  );
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const latestNotesRef = useRef(notes);
   latestNotesRef.current = notes;
 
@@ -78,20 +93,102 @@ export const NotesTab: React.FC<Props> = ({
     [problem.id, onDirtyChange, onProblemUpdated]
   );
 
+  /**
+   * Shared write path for typed AND dictated text: identical autosave,
+   * dirty-tracking, and char-count behavior regardless of input modality.
+   */
+  const applyNotesText = useCallback(
+    (nextText: string) => {
+      setNotes(nextText);
+      setSaveStatus('unsaved');
+      onDirtyChange?.(true);
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        saveToDb(nextText);
+      }, 1000);
+    },
+    [saveToDb, onDirtyChange]
+  );
+
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const nextText = e.target.value;
-    setNotes(nextText);
-    setSaveStatus('unsaved');
-    onDirtyChange?.(true);
-
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
-      saveToDb(nextText);
-    }, 1000);
+    applyNotesText(e.target.value);
   };
+
+  // Transcription provider + on-device STT model (Settings).
+  useEffect(() => {
+    let cancelled = false;
+    settingsRepo
+      .get()
+      .then((s) => {
+        if (cancelled) return;
+        setSttModelId(normalizeSttModelId(s.sttModel));
+        setSttProvider(normalizeTranscriptionProvider(s.sttProvider));
+      })
+      .catch(() => {
+        // Keep defaults when settings are unreadable.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /**
+   * Splices a transcribed take at the caret (or appends at the end when the
+   * editor isn't focused), normalizing boundary whitespace so words never
+   * fuse. Flows through `applyNotesText`, so autosave/dirty/char-count
+   * behave exactly as if typed.
+   */
+  const insertTextAtCursor = useCallback(
+    (insert: string) => {
+      const cleaned = insert.replace(/\s+/g, ' ').trim();
+      if (!cleaned) return;
+      const base = latestNotesRef.current;
+      const el = textareaRef.current;
+
+      let next: string;
+      let caret: number;
+      if (el && document.activeElement === el && typeof el.selectionStart === 'number') {
+        const start = el.selectionStart ?? base.length;
+        const end = el.selectionEnd ?? base.length;
+        const before = base.slice(0, start);
+        const after = base.slice(end);
+        const needsSpaceBefore = before.length > 0 && !/\s$/.test(before);
+        const needsSpaceAfter = after.length > 0 && !/^\s/.test(after);
+        const chunk = `${needsSpaceBefore ? ' ' : ''}${cleaned}${needsSpaceAfter ? ' ' : ''}`;
+        next = `${before}${chunk}${after}`;
+        caret = before.length + chunk.length;
+      } else {
+        const needsSpace = base.length > 0 && !/\s$/.test(base);
+        next = `${base}${needsSpace ? ' ' : ''}${cleaned}`;
+        caret = next.length;
+      }
+
+      applyNotesText(next);
+      requestAnimationFrame(() => {
+        const node = textareaRef.current;
+        if (node) {
+          node.focus();
+          try {
+            node.setSelectionRange(caret, caret);
+          } catch {
+            // Ignore caret failures on exotic inputs.
+          }
+        }
+      });
+    },
+    [applyNotesText]
+  );
+
+  const voice = useVoiceDictation({
+    provider: sttProvider,
+    modelId: sttModelId,
+    onTranscript: insertTextAtCursor,
+    onError: (message) => toast.error(message),
+  });
 
   // Clean up timer on unmount and save pending changes
   useEffect(() => {
@@ -109,7 +206,10 @@ export const NotesTab: React.FC<Props> = ({
   const isReviewDisabled = charCount < 50 || isReviewing;
 
   // Default mock review generator for Phase 8
-  const getMockReview = (notesText: string, modelUsed = 'gemini-flash-lite-latest'): Omit<NoteReview, 'id' | 'createdAt'> => {
+  const getMockReview = (
+    notesText: string,
+    modelUsed = 'gemini-flash-lite-latest'
+  ): Omit<NoteReview, 'id' | 'createdAt'> => {
     return {
       problemId: problem.id,
       notesSnapshot: notesText,
@@ -118,7 +218,8 @@ export const NotesTab: React.FC<Props> = ({
       corrections: [
         {
           claim: 'The auxiliary space is O(1) because we only store element pointers.',
-          issue: 'Storing visited values in a hash map scales linearly with input size in the worst case.',
+          issue:
+            'Storing visited values in a hash map scales linearly with input size in the worst case.',
           correction: 'The auxiliary space is O(N) for the map, not O(1).',
         },
       ],
@@ -177,7 +278,9 @@ export const NotesTab: React.FC<Props> = ({
       onProblemUpdated();
     } catch (err) {
       console.error('Failed to review notes:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to submit notes for review. Please try again.');
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to submit notes for review. Please try again.'
+      );
     } finally {
       setIsReviewing(false);
     }
@@ -209,10 +312,11 @@ export const NotesTab: React.FC<Props> = ({
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`w-3.5 h-3.5 ${star <= rating
+            className={`w-3.5 h-3.5 ${
+              star <= rating
                 ? 'text-amber-400 fill-amber-400'
                 : 'text-slate-300 dark:text-slate-700'
-              }`}
+            }`}
           />
         ))}
       </div>
@@ -231,10 +335,11 @@ export const NotesTab: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setViewMode('write')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${viewMode === 'write'
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'write'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                }`}
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Write</span>
@@ -242,10 +347,11 @@ export const NotesTab: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setViewMode('preview')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${viewMode === 'preview'
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                  viewMode === 'preview'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                }`}
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>Preview</span>
@@ -275,13 +381,24 @@ export const NotesTab: React.FC<Props> = ({
           <div className="flex items-center gap-3">
             {/* Character counter / requirement */}
             <div
-              className={`text-xs font-mono font-medium ${charCount >= 50
+              className={`text-xs font-mono font-medium ${
+                charCount >= 50
                   ? 'text-slate-500 dark:text-slate-400'
                   : 'text-amber-600 dark:text-amber-400'
-                }`}
+              }`}
             >
               {charCount}/50 chars min
             </div>
+
+            {/* On-device voice dictation (hidden where mic capture is unavailable) */}
+            <VoiceDictateButton
+              status={voice.status}
+              modelProgress={voice.modelProgress}
+              recordingSeconds={voice.recordingSeconds}
+              isSupported={voice.isSupported}
+              disabled={isReviewing}
+              onToggle={voice.toggle}
+            />
 
             {/* Review My Notes Button (FR-6.3) */}
             <div className="relative group">
@@ -289,10 +406,11 @@ export const NotesTab: React.FC<Props> = ({
                 type="button"
                 disabled={isReviewDisabled}
                 onClick={handleReviewNotes}
-                className={`px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${isReviewDisabled
+                className={`px-4 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
+                  isReviewDisabled
                     ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
                     : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs active:scale-98'
-                  }`}
+                }`}
               >
                 {isReviewing ? (
                   <>
@@ -318,8 +436,43 @@ export const NotesTab: React.FC<Props> = ({
 
         {/* Editor Body */}
         <div className="p-5">
+          {/* Voice status strip while recording / transcribing */}
+          {voice.status !== 'idle' && (
+            <div
+              aria-live="polite"
+              className="mb-3 flex items-start gap-2 px-3.5 py-2.5 text-xs rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-900 dark:text-rose-200"
+            >
+              <span className="relative flex w-2 h-2 mt-1 shrink-0" aria-hidden="true">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+              </span>
+              <Mic className="w-3.5 h-3.5 mt-0.5 shrink-0" aria-hidden="true" />
+              <span className="leading-relaxed">
+                {voice.status === 'recording' ? (
+                  <span>
+                    Recording… click <span className="font-semibold">Stop</span> when done.
+                    {sttProvider === 'gemini'
+                      ? ' Gemini Flash transcribes it right after.'
+                      : ' Transcription runs on-device right after.'}
+                  </span>
+                ) : voice.modelProgress && voice.modelProgress.ratio !== null ? (
+                  <span>
+                    Downloading speech model (one-time)…
+                    <span className="font-mono font-semibold">
+                      {' '}
+                      {Math.round(voice.modelProgress.ratio * 100)}%
+                    </span>
+                  </span>
+                ) : (
+                  <span>Transcribing on-device… your words appear below in a moment.</span>
+                )}
+              </span>
+            </div>
+          )}
+
           {viewMode === 'write' ? (
             <textarea
+              ref={textareaRef}
               value={notes}
               onChange={handleNotesChange}
               placeholder={SCAFFOLD_PLACEHOLDER}
@@ -357,7 +510,8 @@ export const NotesTab: React.FC<Props> = ({
             <HelpCircle className="w-8 h-8 mx-auto text-slate-300 dark:text-slate-700 mb-2" />
             <p className="text-sm font-medium">No note reviews yet</p>
             <p className="text-xs text-slate-400 mt-1">
-              Write at least 50 characters of takeaways and click "Review my notes" to test whether your understanding will survive 3 weeks of forgetting.
+              Write at least 50 characters of takeaways and click "Review my notes" to test whether
+              your understanding will survive 3 weeks of forgetting.
             </p>
           </div>
         ) : (
@@ -381,10 +535,11 @@ export const NotesTab: React.FC<Props> = ({
                     <div className="flex flex-wrap items-center gap-3">
                       {/* Verdict Badge */}
                       <span
-                        className={`px-2.5 py-0.5 text-xs font-mono font-bold uppercase tracking-wider rounded border ${isSolid
+                        className={`px-2.5 py-0.5 text-xs font-mono font-bold uppercase tracking-wider rounded border ${
+                          isSolid
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
                             : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
-                          }`}
+                        }`}
                       >
                         {isSolid ? 'Solid' : 'Needs Work'}
                       </span>
@@ -423,9 +578,7 @@ export const NotesTab: React.FC<Props> = ({
                         <span className="font-semibold block text-[11px] text-slate-500 uppercase tracking-wider mb-1">
                           Notes snapshot as reviewed:
                         </span>
-                        <div className="line-clamp-3 whitespace-pre-wrap">
-                          {rev.notesSnapshot}
-                        </div>
+                        <div className="line-clamp-3 whitespace-pre-wrap">{rev.notesSnapshot}</div>
                       </div>
 
                       {/* Rewritten Key Takeaway with Copy button */}
@@ -510,7 +663,9 @@ export const NotesTab: React.FC<Props> = ({
                             {rev.strengths?.map((str, sIdx) => (
                               <li key={sIdx} className="flex items-start gap-1.5">
                                 <span className="text-emerald-500 font-bold">•</span>
-                                <span><MathText content={str} /></span>
+                                <span>
+                                  <MathText content={str} />
+                                </span>
                               </li>
                             ))}
                           </ul>
@@ -526,7 +681,9 @@ export const NotesTab: React.FC<Props> = ({
                             {rev.gaps?.map((gap, gIdx) => (
                               <li key={gIdx} className="flex items-start gap-1.5">
                                 <span className="text-amber-500 font-bold">•</span>
-                                <span><MathText content={gap} /></span>
+                                <span>
+                                  <MathText content={gap} />
+                                </span>
                               </li>
                             ))}
                           </ul>

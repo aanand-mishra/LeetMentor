@@ -9,6 +9,8 @@ import {
   NOTES_REVIEW_RESPONSE_SCHEMA,
   buildMentorSystemInstruction,
   buildMentorPayload,
+  TRANSCRIPTION_SYSTEM_INSTRUCTION,
+  buildTranscriptionUserPrompt,
 } from './prompts';
 import { dispatchGeminiRequest, GeminiError } from './transport';
 
@@ -159,7 +161,9 @@ export async function requestNotesReview(
   const humanLang = settings.responseLanguage || 'English';
   const userPayload = buildNotesReviewPayload(problem, notes, attemptCount);
 
-  const rawResult = await dispatchGeminiRequest<Omit<NoteReview, 'id' | 'problemId' | 'notesSnapshot' | 'model' | 'createdAt'>>({
+  const rawResult = await dispatchGeminiRequest<
+    Omit<NoteReview, 'id' | 'problemId' | 'notesSnapshot' | 'model' | 'createdAt'>
+  >({
     apiKey: settings.geminiApiKey,
     model: activeModel,
     systemInstruction: buildNotesReviewSystemInstruction(humanLang),
@@ -177,6 +181,54 @@ export async function requestNotesReview(
     ...rawResult,
     problemId: problem.id,
     notesSnapshot: notes,
+    model: activeModel,
+  };
+}
+
+/**
+ * Transcribes a spoken learning note via Gemini Flash audio input.
+ *
+ * Reuses the shared transport (single-flight queue, 5s spacing, backoff,
+ * error taxonomy) and the daily quota counter like every other AI feature.
+ * The WAV must be base64 (no data-URL prefix); temperature 0 keeps output
+ * deterministic. Returns '' when the model reports no intelligible speech.
+ */
+export async function requestVoiceTranscription(
+  audioBase64Wav: string,
+  onQueueUpdate?: (status: string) => void
+): Promise<{ text: string; model: string }> {
+  const settings = await settingsRepo.get();
+
+  if (!settings.geminiApiKey || !settings.geminiApiKey.trim()) {
+    throw new GeminiError(
+      'Gemini API key is not configured. Add your key in Settings for cloud transcription, or switch to on-device Whisper in Settings.',
+      400,
+      'API_KEY_MISSING'
+    );
+  }
+
+  if (!audioBase64Wav) {
+    throw new GeminiError('No audio to transcribe.', 400, 'EMPTY_AUDIO');
+  }
+
+  const activeModel = settings.model || 'gemini-flash-lite-latest';
+
+  const rawText = await dispatchGeminiRequest<string>({
+    apiKey: settings.geminiApiKey,
+    model: activeModel,
+    systemInstruction: TRANSCRIPTION_SYSTEM_INSTRUCTION,
+    userPrompt: buildTranscriptionUserPrompt(),
+    mediaParts: [{ mimeType: 'audio/wav', base64Data: audioBase64Wav }],
+    temperature: 0,
+    onQueueUpdate,
+  });
+
+  // Track daily usage locally (FR-8.5)
+  await settingsRepo.incrementDailyRequestCount().catch(console.error);
+
+  const text = rawText.trim();
+  return {
+    text: text === '[no speech detected]' ? '' : text,
     model: activeModel,
   };
 }

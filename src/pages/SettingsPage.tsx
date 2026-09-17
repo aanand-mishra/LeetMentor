@@ -21,6 +21,12 @@ import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import type { Settings } from '../types';
 import {
+  STT_MODELS,
+  TRANSCRIPTION_PROVIDERS,
+  normalizeSttModelId,
+  normalizeTranscriptionProvider,
+} from '../lib/voice/stt';
+import {
   triggerExportDownload,
   validateExportPayload,
   importDatabase,
@@ -315,11 +321,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   if (!settings) {
-    return (
-      <div className="py-12 text-center text-sm text-slate-500">
-        Loading settings...
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-slate-500">Loading settings...</div>;
   }
 
   const commonLanguages = [
@@ -356,7 +358,8 @@ export const SettingsPage: React.FC = () => {
               Google Gemini API Key
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Used directly from your browser to power progressive hints, code review, and note critique.
+              Used directly from your browser to power progressive hints, code review, and note
+              critique.
             </p>
           </div>
         </div>
@@ -368,10 +371,14 @@ export const SettingsPage: React.FC = () => {
             <span>Security & Privacy Notice</span>
           </div>
           <p>
-            Your API key is stored unencrypted in this browser's IndexedDB and is sent directly from your browser to Google. Anyone with access to this browser profile, and any script running on this page, can read it. Use a key restricted to the Generative Language API, and revoke it if you share this device.
+            Your API key is stored unencrypted in this browser's IndexedDB and is sent directly from
+            your browser to Google. Anyone with access to this browser profile, and any script
+            running on this page, can read it. Use a key restricted to the Generative Language API,
+            and revoke it if you share this device.
           </p>
           <p>
-            Free-tier Gemini requests may be used by Google to improve their models. Do not paste confidential or employer-owned code.
+            Free-tier Gemini requests may be used by Google to improve their models. Do not paste
+            confidential or employer-owned code.
           </p>
         </div>
 
@@ -428,10 +435,11 @@ export const SettingsPage: React.FC = () => {
           {/* Test connection report feedback */}
           {testResult && (
             <div
-              className={`p-3 rounded-lg text-xs flex items-start gap-2 ${testResult.ok
-                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
-                }`}
+              className={`p-3 rounded-lg text-xs flex items-start gap-2 ${
+                testResult.ok
+                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+              }`}
             >
               {testResult.ok ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -469,7 +477,8 @@ export const SettingsPage: React.FC = () => {
                 Active Gemini Model
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Dynamic model list fetched live from Google API. Flash-class models are recommended for free-tier quotas.
+                Dynamic model list fetched live from Google API. Flash-class models are recommended
+                for free-tier quotas.
               </p>
             </div>
           </div>
@@ -526,7 +535,9 @@ export const SettingsPage: React.FC = () => {
               >
                 {availableModels.length === 0 ? (
                   <option value={settings.model}>
-                    {isLoadingModels ? 'Loading models from Google…' : `${settings.model} (Default)`}
+                    {isLoadingModels
+                      ? 'Loading models from Google…'
+                      : `${settings.model} (Default)`}
                   </option>
                 ) : (
                   availableModels.map((m) => (
@@ -551,7 +562,8 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Flash models provide low latency and generous free-tier limits without incurring billing.
+              Flash models provide low latency and generous free-tier limits without incurring
+              billing.
             </p>
           </div>
         )}
@@ -595,6 +607,51 @@ export const SettingsPage: React.FC = () => {
             </p>
           </div>
 
+          {/* Voice Dictation Provider */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Voice Transcription Provider
+            </label>
+            <select
+              value={normalizeTranscriptionProvider(settings.sttProvider)}
+              onChange={(e) => handleUpdateSetting('sttProvider', e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {TRANSCRIPTION_PROVIDERS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-slate-400">
+              Gemini Flash is the most accurate and needs your API key (audio is sent to Google and
+              counts toward your daily quota). On-device Whisper is private and works offline after
+              a one-time model download.
+            </p>
+          </div>
+
+          {/* Voice Dictation Model */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Speech-to-Text Model
+            </label>
+            <select
+              value={normalizeSttModelId(settings.sttModel)}
+              onChange={(e) => handleUpdateSetting('sttModel', e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              {STT_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.label} ({m.approxSize})
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-slate-400">
+              Applies when the provider above is on-device Whisper. Downloads once, then transcribes
+              100% on-device — mic audio never leaves this device.
+            </p>
+          </div>
+
           {/* Theme */}
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -609,33 +666,39 @@ export const SettingsPage: React.FC = () => {
                     setTheme(t);
                     handleUpdateSetting('theme', t);
                   }}
-                  className={`flex-1 py-1.5 text-xs font-semibold rounded-md capitalize transition-colors ${theme === t
-                    ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
-                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
-                    }`}
+                  className={`flex-1 py-1.5 text-xs font-semibold rounded-md capitalize transition-colors ${
+                    theme === t
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                  }`}
                 >
                   {t}
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-slate-400">
-              Dark mode is a first-class design target.
-            </p>
+            <p className="text-[11px] text-slate-400">Dark mode is a first-class design target.</p>
           </div>
 
           {/* AI Output Human Language */}
           <div className="space-y-2 md:col-span-2 p-3.5 rounded-xl bg-slate-100/60 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800">
             <div className="flex items-center justify-between">
               <div>
-                <label htmlFor="response-language" className="block text-xs font-bold text-slate-900 dark:text-slate-100">
+                <label
+                  htmlFor="response-language"
+                  className="block text-xs font-bold text-slate-900 dark:text-slate-100"
+                >
                   AI Output Human Language
                 </label>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  Language used by AI Mentor hints, solutions, explanations, docstrings, and code comments.
+                  Language used by AI Mentor hints, solutions, explanations, docstrings, and code
+                  comments.
                 </p>
               </div>
               <span className="text-[11px] text-slate-400 font-mono hidden sm:inline-block">
-                Active: <span className="font-semibold text-indigo-600 dark:text-indigo-400">{settings.responseLanguage || 'English'}</span>
+                Active:{' '}
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  {settings.responseLanguage || 'English'}
+                </span>
               </span>
             </div>
 
@@ -665,21 +728,20 @@ export const SettingsPage: React.FC = () => {
             {/* Quick Presets */}
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
               <span className="text-[11px] font-medium text-slate-400 mr-1">Popular options:</span>
-              {[
-                'English',
-                'Hinglish',
-                'Nepali+English(Romanized)',
-              ].map((langOption) => {
-                const isSelected = (settings.responseLanguage || 'English').toLowerCase() === langOption.toLowerCase();
+              {['English', 'Hinglish', 'Nepali+English(Romanized)'].map((langOption) => {
+                const isSelected =
+                  (settings.responseLanguage || 'English').toLowerCase() ===
+                  langOption.toLowerCase();
                 return (
                   <button
                     key={langOption}
                     type="button"
                     onClick={() => handleResponseLangSave(langOption)}
-                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all ${isSelected
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                      : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                    }`}
                   >
                     {langOption}
                   </button>
@@ -691,7 +753,10 @@ export const SettingsPage: React.FC = () => {
           {/* Temperature Slider */}
           <div className="space-y-1.5 md:col-span-2">
             <div className="flex items-center justify-between">
-              <label htmlFor="model-temp" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="model-temp"
+                className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Model Temperature ({settings.temperature.toFixed(2)})
               </label>
               <span className="text-[11px] text-slate-400 font-mono">
@@ -713,7 +778,8 @@ export const SettingsPage: React.FC = () => {
               className="w-full accent-indigo-600"
             />
             <p className="text-[11px] text-slate-400">
-              Lower temperature (0.2–0.4) is ideal for strict syntax critique and algorithmic accuracy.
+              Lower temperature (0.2–0.4) is ideal for strict syntax critique and algorithmic
+              accuracy.
             </p>
           </div>
 
@@ -755,7 +821,8 @@ export const SettingsPage: React.FC = () => {
               Data Backup & Portability
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Export your problems, attempts, mentor messages, and note reviews. The Gemini API key is strictly excluded.
+              Export your problems, attempts, mentor messages, and note reviews. The Gemini API key
+              is strictly excluded.
             </p>
           </div>
         </div>
@@ -785,7 +852,8 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <p className="text-[11px] text-slate-400">
-          Tip: Download a backup regularly. Since all data lives in your browser's IndexedDB, clearing site data will erase your history if not backed up.
+          Tip: Download a backup regularly. Since all data lives in your browser's IndexedDB,
+          clearing site data will erase your history if not backed up.
         </p>
       </div>
 
@@ -800,7 +868,8 @@ export const SettingsPage: React.FC = () => {
               Demo & Sample Data
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Populate the local database with realistic Leetcode problems (with attempts, reviews, notes, and mentor hints) or high-volume performance test sets.
+              Populate the local database with realistic Leetcode problems (with attempts, reviews,
+              notes, and mentor hints) or high-volume performance test sets.
             </p>
           </div>
         </div>
@@ -828,7 +897,8 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <p className="text-[11px] text-slate-400">
-          Note: Seeding adds to your existing dataset. To start completely fresh before seeding, use &ldquo;Delete all data&rdquo; in the Danger Zone below.
+          Note: Seeding adds to your existing dataset. To start completely fresh before seeding, use
+          &ldquo;Delete all data&rdquo; in the Danger Zone below.
         </p>
       </div>
 
@@ -839,7 +909,8 @@ export const SettingsPage: React.FC = () => {
           <h2 className="text-base font-bold">Danger Zone</h2>
         </div>
         <p className="text-xs text-slate-600 dark:text-slate-400">
-          Permanently delete all problems, attempts, hints, reviews, and settings stored in this browser. This cannot be undone.
+          Permanently delete all problems, attempts, hints, reviews, and settings stored in this
+          browser. This cannot be undone.
         </p>
 
         <div>
@@ -926,7 +997,8 @@ export const SettingsPage: React.FC = () => {
                       Merge (Recommended)
                     </span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Keep existing records. Skip any records whose ID already exists in your database.
+                      Keep existing records. Skip any records whose ID already exists in your
+                      database.
                     </span>
                   </div>
                 </label>
@@ -945,7 +1017,8 @@ export const SettingsPage: React.FC = () => {
                       Replace (Wipe Existing Data)
                     </span>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Clears current problems, attempts, hints, and reviews first, then loads this file. (Your active API key is kept safe).
+                      Clears current problems, attempts, hints, and reviews first, then loads this
+                      file. (Your active API key is kept safe).
                     </span>
                   </div>
                 </label>
@@ -956,7 +1029,8 @@ export const SettingsPage: React.FC = () => {
             {importMode === 'replace' && (
               <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-lg space-y-2">
                 <p className="text-xs font-semibold text-rose-800 dark:text-rose-300">
-                  Type <span className="font-mono underline">REPLACE</span> to confirm database wipe:
+                  Type <span className="font-mono underline">REPLACE</span> to confirm database
+                  wipe:
                 </p>
                 <input
                   type="text"
@@ -978,12 +1052,15 @@ export const SettingsPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                disabled={isImporting || (importMode === 'replace' && replaceConfirmInput !== 'REPLACE')}
+                disabled={
+                  isImporting || (importMode === 'replace' && replaceConfirmInput !== 'REPLACE')
+                }
                 onClick={handleExecuteImport}
-                className={`px-4 py-2 text-xs font-semibold rounded-lg text-white shadow-xs disabled:opacity-50 ${importMode === 'replace'
-                  ? 'bg-rose-600 hover:bg-rose-700'
-                  : 'bg-indigo-600 hover:bg-indigo-700'
-                  }`}
+                className={`px-4 py-2 text-xs font-semibold rounded-lg text-white shadow-xs disabled:opacity-50 ${
+                  importMode === 'replace'
+                    ? 'bg-rose-600 hover:bg-rose-700'
+                    : 'bg-indigo-600 hover:bg-indigo-700'
+                }`}
               >
                 {isImporting
                   ? 'Importing…'
@@ -1010,7 +1087,8 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              This will wipe all tracked problems, code attempts, progressive mentor hints, and review history from this device.
+              This will wipe all tracked problems, code attempts, progressive mentor hints, and
+              review history from this device.
             </p>
 
             <div className="p-3 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-lg space-y-2">

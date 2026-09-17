@@ -3,7 +3,7 @@ import type { Problem, Attempt } from '../../types';
 // ==========================================
 // Code Reviewer Prompt (§7.4)
 // ==========================================
-export const CODE_REVIEW_SYSTEM_INSTRUCTION = `You are a strict but constructive reviewer of data structures and algorithms
+const CODE_REVIEW_SYSTEM_INSTRUCTION = `You are a strict but constructive reviewer of data structures and algorithms
 solutions. The student is preparing for technical interviews. Your job is to make
 them fix their own code, not to fix it for them.
 
@@ -128,7 +128,7 @@ All natural language explanation fields in the JSON response (summary, issue tit
 // ==========================================
 // Notes Reviewer Prompt (§7.5)
 // ==========================================
-export const NOTES_REVIEW_SYSTEM_INSTRUCTION = `You review a student's learning notes about a DSA problem they just solved. You are
+const NOTES_REVIEW_SYSTEM_INSTRUCTION = `You review a student's learning notes about a DSA problem they just solved. You are
 judging whether the notes demonstrate transferable understanding, not memorization.
 
 Ask yourself:
@@ -291,4 +291,20 @@ TOPICS: ${(problem.topics || []).join(', ') || 'None'}
 PROBLEM STATEMENT:
 ${statementStr}
 ${attemptContext}`;
+}
+
+// ==========================================
+// Voice Transcription (spoken learning notes → text)
+// ==========================================
+export const TRANSCRIPTION_SYSTEM_INSTRUCTION = `You transcribe the student's spoken learning note about a data structures and algorithms problem.
+
+Hard rules:
+- Output ONLY the verbatim transcript of what was said. No commentary, no preamble, no quotes, no "Transcript:" label.
+- Transcribe in the language spoken (usually English, possibly with an Indian accent).
+- Fix only obvious homophone slips when the technical meaning is unambiguous (e.g. "hash map" said clearly stays "hash map"). Never rewrite, summarize, or complete the student's thoughts.
+- Technical terms (Two Sum, binary search, dynamic programming, O(n), hash map, recursion) must keep standard spelling and casing.
+- If the audio contains no intelligible speech, reply with exactly: [no speech detected]`;
+
+export function buildTranscriptionUserPrompt(): string {
+  return 'Transcribe the attached voice note into text.';
 }

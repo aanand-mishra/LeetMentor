@@ -40,7 +40,7 @@ interface CodeBlockProps {
   value: string;
 }
 
-export const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
+const CodeBlock: React.FC<CodeBlockProps> = ({ language, value }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -134,12 +134,11 @@ interface MarkdownRendererProps {
  * Full Markdown renderer with GitHub Flavored Markdown (tables, tasklists),
  * KaTeX math ($...$ inline and $$...$$ display math), and IDE-grade code highlighting.
  */
-export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
-  content,
-  className = '',
-}) => {
+export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
   return (
-    <div className={`markdown-body max-w-none text-slate-800 dark:text-slate-200 leading-relaxed ${className}`}>
+    <div
+      className={`markdown-body max-w-none text-slate-800 dark:text-slate-200 leading-relaxed ${className}`}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
@@ -152,32 +151,41 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           h2: ({ children }) => {
             const raw = typeof children === 'string' ? children : String(children);
             let Icon = null;
-            let badgeStyle = 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200/60 dark:border-indigo-800/60';
+            let badgeStyle =
+              'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200/60 dark:border-indigo-800/60';
 
             if (/complexity/i.test(raw)) {
               Icon = Timer;
-              badgeStyle = 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200/60 dark:border-emerald-800/60';
+              badgeStyle =
+                'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200/60 dark:border-emerald-800/60';
             } else if (/edge case/i.test(raw)) {
               Icon = ShieldAlert;
-              badgeStyle = 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border-amber-200/60 dark:border-amber-800/60';
+              badgeStyle =
+                'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border-amber-200/60 dark:border-amber-800/60';
             } else if (/pitfall|mistake/i.test(raw)) {
               Icon = AlertTriangle;
-              badgeStyle = 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border-rose-200/60 dark:border-rose-800/60';
+              badgeStyle =
+                'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border-rose-200/60 dark:border-rose-800/60';
             } else if (/related/i.test(raw)) {
               Icon = Compass;
-              badgeStyle = 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 border-purple-200/60 dark:border-purple-800/60';
+              badgeStyle =
+                'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 border-purple-200/60 dark:border-purple-800/60';
             } else if (/solution|code/i.test(raw)) {
               Icon = FileCode;
-              badgeStyle = 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200/60 dark:border-indigo-800/60';
+              badgeStyle =
+                'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200/60 dark:border-indigo-800/60';
             } else if (/question|challenge|pattern|insight|blueprint/i.test(raw)) {
               Icon = Sparkles;
-              badgeStyle = 'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 border-sky-200/60 dark:border-sky-800/60';
+              badgeStyle =
+                'text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 border-sky-200/60 dark:border-sky-800/60';
             }
 
             return (
               <h2 className="text-base font-bold text-slate-900 dark:text-white mt-6 mb-3 flex items-center gap-2.5 pb-1 border-b border-slate-100 dark:border-slate-800/80">
                 {Icon && (
-                  <span className={`p-1 rounded-md ${badgeStyle} border inline-flex items-center justify-center shrink-0`}>
+                  <span
+                    className={`p-1 rounded-md ${badgeStyle} border inline-flex items-center justify-center shrink-0`}
+                  >
                     <Icon className="w-4 h-4" />
                   </span>
                 )}
@@ -195,11 +203,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
               {children}
             </p>
           ),
-          ul: ({ children }) => (
-            <ul className="my-2.5 space-y-1.5 list-none pl-1">
-              {children}
-            </ul>
-          ),
+          ul: ({ children }) => <ul className="my-2.5 space-y-1.5 list-none pl-1">{children}</ul>,
           ol: ({ children }) => (
             <ol className="my-2.5 space-y-2 list-decimal list-outside pl-5 text-sm text-slate-700 dark:text-slate-300 font-medium marker:font-bold marker:text-indigo-600 dark:marker:text-indigo-400">
               {children}
@@ -207,7 +211,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           ),
           li: ({ children }) => (
             <li className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 flex items-start gap-2.5 my-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 mt-2 shrink-0" aria-hidden="true" />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400 mt-2 shrink-0"
+                aria-hidden="true"
+              />
               <span className="flex-1">{children}</span>
             </li>
           ),
@@ -226,7 +233,10 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
           ),
           table: ({ ...props }) => (
             <div className="overflow-x-auto my-3 border border-slate-200 dark:border-slate-800 rounded-lg">
-              <table {...props} className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-xs" />
+              <table
+                {...props}
+                className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-xs"
+              />
             </div>
           ),
           th: ({ ...props }) => (
@@ -242,13 +252,12 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             />
           ),
           strong: ({ children }) => (
-            <strong className="font-semibold text-slate-900 dark:text-white">
-              {children}
-            </strong>
+            <strong className="font-semibold text-slate-900 dark:text-white">{children}</strong>
           ),
           pre: ({ children }) => <>{children}</>,
           code: ({ className: codeClassName, children, ...props }) => {
-            const isInline = !codeClassName && typeof children === 'string' && !children.includes('\n');
+            const isInline =
+              !codeClassName && typeof children === 'string' && !children.includes('\n');
             if (isInline) {
               return (
                 <code
@@ -261,12 +270,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             }
             const match = /language-(\w+)/.exec(codeClassName || '');
             const language = match ? match[1] : '';
-            return (
-              <CodeBlock
-                language={language}
-                value={String(children).replace(/\n$/, '')}
-              />
-            );
+            return <CodeBlock language={language} value={String(children).replace(/\n$/, '')} />;
           },
         }}
       >

@@ -9,7 +9,7 @@ import { useToast } from '../hooks/useToast';
 import type { Problem } from '../types';
 
 // Tab type
-export type TabKey = 'overview' | 'attempts' | 'mentor' | 'notes';
+type TabKey = 'overview' | 'attempts' | 'mentor' | 'notes';
 
 // Lazy or placeholder imports for later phases
 import { AttemptsTab } from '../components/problem/AttemptsTab';
@@ -60,16 +60,25 @@ export const ProblemDetailPage: React.FC = () => {
 
   // Live queries for this problem and related tables
   const problem = useLiveQuery(() => (id ? db.problems.get(id) : undefined), [id]);
-  const attempts = useLiveQuery(() => (id ? db.attempts.where('problemId').equals(id).toArray() : []), [id]) || [];
-  const mentorMessages = useLiveQuery(() => (id ? db.mentorMessages.where('problemId').equals(id).toArray() : []), [id]) || [];
-  const noteReviews = useLiveQuery(() => (id ? db.noteReviews.where('problemId').equals(id).toArray() : []), [id]) || [];
+  const attempts =
+    useLiveQuery(() => (id ? db.attempts.where('problemId').equals(id).toArray() : []), [id]) || [];
+  const mentorMessages =
+    useLiveQuery(
+      () => (id ? db.mentorMessages.where('problemId').equals(id).toArray() : []),
+      [id]
+    ) || [];
+  const noteReviews =
+    useLiveQuery(() => (id ? db.noteReviews.where('problemId').equals(id).toArray() : []), [id]) ||
+    [];
 
   // Sorted attempts (newest first)
   const sortedAttempts = [...attempts].sort((a, b) => b.attemptNumber - a.attemptNumber);
   // Sorted mentor messages
   const sortedMentor = [...mentorMessages].sort((a, b) => a.level - b.level);
   // Sorted note reviews (newest first)
-  const sortedNoteReviews = [...noteReviews].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const sortedNoteReviews = [...noteReviews].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   const handleProblemUpdated = useCallback(() => {
     // Dexie useLiveQuery automatically updates state
@@ -109,7 +118,9 @@ export const ProblemDetailPage: React.FC = () => {
     return (
       <div className="py-12 text-center">
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Problem Not Found</h2>
-        <p className="text-sm text-slate-500 mt-2">The problem you are looking for does not exist.</p>
+        <p className="text-sm text-slate-500 mt-2">
+          The problem you are looking for does not exist.
+        </p>
         <Link to="/" className="inline-block mt-4 text-indigo-600 dark:text-indigo-400 font-medium">
           Back to Problem List
         </Link>

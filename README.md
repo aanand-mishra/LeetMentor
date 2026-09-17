@@ -50,6 +50,14 @@ The **Add Problem** (`/problem/new`) and **Edit Problem** forms start with a **Q
 - **Offline & private:** the catalog ships inside the app bundle as a lazily-loaded chunk — no network request, no tracking.
 - **Copyright-safe statements:** full LeetCode descriptions are not bundled; the stub points at the official page. Paste the full statement into the field for the best mentor quality.
 
+### Voice Dictation in Learning Notes
+
+Each problem's **Notes** tab has a **Dictate** button next to the character counter. Click to record, click Stop, and your words are transcribed into the editor at the cursor.
+
+- **Gemini Flash by default (most accurate):** your recording is sent to your configured Gemini model for transcription — no model downloads, works in every browser, counts toward your daily AI quota like other AI features. Requires your API key; audio is sent to Google per the privacy notice above.
+- **On-device Whisper fallback:** switch provider in Settings → Voice Transcription Provider for fully private, offline-capable transcription (Tiny ~40MB / Base ~150MB / Small ~300MB one-time downloads, then 100% local — mic audio never leaves your device).
+- **Limits:** needs a microphone + localhost/HTTPS; recordings cap at 2 minutes per take.
+
 ---
 
 ## 2. Quick Start & Local Run

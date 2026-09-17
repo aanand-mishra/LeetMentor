@@ -5,7 +5,11 @@ import {
   buildMentorSystemInstruction,
   CODE_REVIEW_RESPONSE_SCHEMA,
   NOTES_REVIEW_RESPONSE_SCHEMA,
+  TRANSCRIPTION_SYSTEM_INSTRUCTION,
+  buildTranscriptionUserPrompt,
 } from '../lib/gemini/prompts';
+import { requestVoiceTranscription } from '../lib/gemini/client';
+import { settingsRepo, clearAllLocalData } from '../db';
 import {
   dispatchGeminiRequest,
   fetchAvailableModels,
@@ -73,7 +77,14 @@ describe('Phase 11 — Gemini API Integration Layer Tests', () => {
         optimalSpace: 'O(N)',
         isOptimal: false,
       },
-      issues: [{ severity: 'critical', title: 'Quadratic Time', detail: 'Nested loop', suggestion: 'Use map' }],
+      issues: [
+        {
+          severity: 'critical',
+          title: 'Quadratic Time',
+          detail: 'Nested loop',
+          suggestion: 'Use map',
+        },
+      ],
       positives: ['Clean function signature'],
       nextStep: 'Use hash map',
       model: 'gemini-1.5-flash',
@@ -89,12 +100,15 @@ describe('Phase 11 — Gemini API Integration Layer Tests', () => {
     expect(payload).toContain('ATTEMPT NUMBER: 2');
     expect(payload).toContain('PREVIOUS REVIEW VERDICT: revise');
     expect(payload).toContain('PREVIOUS UNRESOLVED ISSUES: Quadratic Time');
-    expect(payload).toContain('STUDENT SAYS THEY CHANGED: Switched from nested loop to single-pass map');
+    expect(payload).toContain(
+      'STUDENT SAYS THEY CHANGED: Switched from nested loop to single-pass map'
+    );
     expect(payload).toContain('seen[target - n]');
   });
 
   it('builds notes review payload with problem, hints used, and student notes (§7.5)', () => {
-    const notesText = 'Key takeaway: Map complements in O(1) average lookup to avoid O(N^2) search.';
+    const notesText =
+      'Key takeaway: Map complements in O(1) average lookup to avoid O(N^2) search.';
     const payload = buildNotesReviewPayload(sampleProblem, notesText, 2);
 
     expect(payload).toContain('PROBLEM: 1. Two Sum (Easy)');
@@ -232,5 +246,65 @@ describe('Phase 11 — Gemini API Integration Layer Tests', () => {
     // Flash model is sorted first
     expect(models[0].id).toBe('gemini-1.5-flash');
     expect(models[1].id).toBe('gemini-1.5-pro');
+  });
+});
+
+describe('Voice transcription via Gemini audio input', () => {
+  beforeEach(() => {
+    resetTransportQueueState();
+    vi.restoreAllMocks();
+  });
+
+  function mockTranscriptResponse(text: string) {
+    return vi.spyOn(global, 'fetch').mockImplementationOnce(async () => {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          candidates: [{ content: { parts: [{ text }] }, finishReason: 'STOP' }],
+        }),
+      } as Response;
+    });
+  }
+
+  it('sends WAV bytes as inline_data alongside the transcription prompt', async () => {
+    const fetchSpy = mockTranscriptResponse('hello hello');
+    await settingsRepo.update({ geminiApiKey: 'test-key', model: 'gemini-2.0-flash' });
+
+    const result = await requestVoiceTranscription('UklGRg==');
+    expect(result.text).toBe('hello hello');
+    expect(result.model).toBe('gemini-2.0-flash');
+
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string);
+    const parts = body.contents[0].parts;
+    expect(parts[0].text).toContain('Transcribe');
+    expect(parts[1].inline_data.mime_type).toBe('audio/wav');
+    expect(parts[1].inline_data.data).toBe('UklGRg==');
+    // Plain-text response: no JSON schema requested.
+    expect(body.generationConfig.responseMimeType).toBeUndefined();
+    expect(body.generationConfig.temperature).toBe(0);
+  });
+
+  it('maps the no-speech sentinel to empty text', async () => {
+    mockTranscriptResponse('[no speech detected]');
+    await settingsRepo.update({ geminiApiKey: 'test-key' });
+
+    const result = await requestVoiceTranscription('UklGRg==');
+    expect(result.text).toBe('');
+  });
+
+  it('throws a settings-guiding error when no API key is configured', async () => {
+    await clearAllLocalData();
+
+    await expect(requestVoiceTranscription('UklGRg==')).rejects.toMatchObject({
+      code: 'API_KEY_MISSING',
+    });
+  });
+
+  it('transcription prompt demands verbatim output only', () => {
+    expect(TRANSCRIPTION_SYSTEM_INSTRUCTION).toContain('verbatim');
+    expect(TRANSCRIPTION_SYSTEM_INSTRUCTION).toContain('ONLY the verbatim transcript');
+    expect(TRANSCRIPTION_SYSTEM_INSTRUCTION).toContain('[no speech detected]');
+    expect(buildTranscriptionUserPrompt()).toContain('Transcribe');
   });
 });

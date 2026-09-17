@@ -2,24 +2,24 @@ export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type Status = 'Not Started' | 'In Progress' | 'Solved';
 
 export interface Problem {
-  id: string;                    // uuid v4
-  number: number | null;         // Leetcode problem number, optional
-  title: string;                 // required, 1-200 chars
-  url: string | null;            // optional, must match leetcode.com/problems/* if present
-  statement: string;             // optional but strongly encouraged
-  difficulty: Difficulty;        // required
-  topics: string[];              // e.g. ['Array', 'Hash Table']
-  patterns: string[];            // e.g. ['Two Pointers', 'Sliding Window']
-  status: Status;                // see transition rules
-  confidence: 1 | 2 | 3 | 4 | 5 | null;  // set after solving
+  id: string; // uuid v4
+  number: number | null; // Leetcode problem number, optional
+  title: string; // required, 1-200 chars
+  url: string | null; // optional, must match leetcode.com/problems/* if present
+  statement: string; // optional but strongly encouraged
+  difficulty: Difficulty; // required
+  topics: string[]; // e.g. ['Array', 'Hash Table']
+  patterns: string[]; // e.g. ['Two Pointers', 'Sliding Window']
+  status: Status; // see transition rules
+  confidence: 1 | 2 | 3 | 4 | 5 | null; // set after solving
   timeSpentMinutes: number | null;
-  hintsUsed: 0 | 1 | 2 | 3 | 4;  // highest mentor level unlocked
+  hintsUsed: 0 | 1 | 2 | 3 | 4; // highest mentor level unlocked
   starred: boolean;
-  userTimeComplexity: string | null;   // user's own claim, e.g. "O(n log n)"
+  userTimeComplexity: string | null; // user's own claim, e.g. "O(n log n)"
   userSpaceComplexity: string | null;
-  notes: string;                 // markdown; "what I learned"
-  language: string;              // e.g. 'python', inherits from settings default
-  dateAdded: string;             // ISO 8601
+  notes: string; // markdown; "what I learned"
+  language: string; // e.g. 'python', inherits from settings default
+  dateAdded: string; // ISO 8601
   dateFirstAttempt: string | null;
   dateSolved: string | null;
   updatedAt: string;
@@ -29,12 +29,12 @@ export interface Problem {
 export interface Attempt {
   id: string;
   problemId: string;
-  attemptNumber: number;         // 1-indexed, monotonic per problem
-  code: string;                  // pasted plain text
+  attemptNumber: number; // 1-indexed, monotonic per problem
+  code: string; // pasted plain text
   language: string;
-  userComment: string;           // optional: "what I changed this time"
+  userComment: string; // optional: "what I changed this time"
   createdAt: string;
-  review: CodeReview | null;     // null until reviewed
+  review: CodeReview | null; // null until reviewed
 }
 
 export interface CodeReviewIssue {
@@ -69,7 +69,7 @@ export interface MentorMessage {
   id: string;
   problemId: string;
   level: 1 | 2 | 3 | 4;
-  content: string;               // markdown
+  content: string; // markdown
   model: string;
   createdAt: string;
 }
@@ -83,28 +83,30 @@ export interface NoteCorrection {
 export interface NoteReview {
   id: string;
   problemId: string;
-  notesSnapshot: string;         // the notes text as reviewed
+  notesSnapshot: string; // the notes text as reviewed
   rating: 1 | 2 | 3 | 4 | 5;
   verdict: 'solid' | 'needs_work';
   corrections: NoteCorrection[];
   gaps: string[];
   strengths: string[];
   keyTakeaway: string;
-  recallQuestions: string[];     // 3 questions, no answers
+  recallQuestions: string[]; // 3 questions, no answers
   model: string;
   createdAt: string;
 }
 
 export interface Settings {
-  key?: string;                  // Dexie key for singleton row, e.g. 'current'
+  key?: string; // Dexie key for singleton row, e.g. 'current'
   geminiApiKey: string;
-  model: string;                 // e.g. 'gemini-flash-lite-latest'
+  model: string; // e.g. 'gemini-flash-lite-latest'
   defaultLanguage: string;
-  responseLanguage?: string;     // human output language (e.g. English, Hinglish, Nepali+English(Romanized)), default 'English'
+  responseLanguage?: string; // human output language (e.g. English, Hinglish, Nepali+English(Romanized)), default 'English'
+  sttModel?: string; // on-device speech-to-text model id ('tiny' | 'base' | 'small'), default 'tiny'
+  sttProvider?: string; // voice transcription provider ('gemini' | 'on-device'), default 'gemini'
   theme: 'light' | 'dark' | 'system';
-  temperature: number;           // default 0.4
-  dailyRequestCount: number;     // local counter, resets at local midnight
-  dailyRequestDate: string;      // YYYY-MM-DD
+  temperature: number; // default 0.4
+  dailyRequestCount: number; // local counter, resets at local midnight
+  dailyRequestDate: string; // YYYY-MM-DD
   lastExportDate?: string | null;
 }
 

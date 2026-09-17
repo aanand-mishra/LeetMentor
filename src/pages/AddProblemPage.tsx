@@ -4,7 +4,7 @@ import { ProblemForm, type ProblemFormData } from '../components/problem/Problem
 import { problemsRepo } from '../db';
 import { useToast } from '../hooks/useToast';
 
-export const AddProblemPage: React.FC = () => {
+const AddProblemPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -5,7 +5,7 @@ import { problemsRepo } from '../db';
 import type { Problem } from '../types';
 import { useToast } from '../hooks/useToast';
 
-export const EditProblemPage: React.FC = () => {
+const EditProblemPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
@@ -51,9 +51,7 @@ export const EditProblemPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="py-12 text-center text-sm text-slate-500">
-        Loading problem details...
-      </div>
+      <div className="py-12 text-center text-sm text-slate-500">Loading problem details...</div>
     );
   }
 
@@ -61,7 +59,9 @@ export const EditProblemPage: React.FC = () => {
     return (
       <div className="py-12 text-center">
         <h2 className="text-xl font-bold text-slate-800 dark:text-slate-200">Problem Not Found</h2>
-        <p className="text-sm text-slate-500 mt-2">The problem you are trying to edit does not exist.</p>
+        <p className="text-sm text-slate-500 mt-2">
+          The problem you are trying to edit does not exist.
+        </p>
         <Link to="/" className="inline-block mt-4 text-indigo-600 dark:text-indigo-400 font-medium">
           Back to Problem List
         </Link>
