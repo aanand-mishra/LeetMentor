@@ -101,8 +101,6 @@ export interface Settings {
   model: string; // e.g. 'gemini-flash-lite-latest'
   defaultLanguage: string;
   responseLanguage?: string; // human output language (e.g. English, Hinglish, Nepali+English(Romanized)), default 'English'
-  sttModel?: string; // on-device speech-to-text model id ('tiny' | 'base' | 'small'), default 'tiny'
-  sttProvider?: string; // voice transcription provider ('gemini' | 'on-device'), default 'gemini'
   theme: 'light' | 'dark' | 'system';
   temperature: number; // default 0.4
   dailyRequestCount: number; // local counter, resets at local midnight

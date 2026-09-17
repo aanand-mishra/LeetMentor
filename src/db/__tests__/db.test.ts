@@ -6,14 +6,13 @@ import {
   mentorRepo,
   noteReviewsRepo,
   settingsRepo,
+  clearAllLocalData,
 } from '../index';
 import { generateUuid } from '../../utils/uuid';
-import { seedDatabase, clearDatabase } from '../seed';
 
 describe('Data Layer & Repositories', () => {
   beforeEach(async () => {
-    await clearDatabase();
-    await db.settings.clear();
+    await clearAllLocalData();
   });
 
   describe('UUID generation', () => {
@@ -357,17 +356,34 @@ describe('Data Layer & Repositories', () => {
     });
   });
 
-  describe('Seed script', () => {
-    it('seeds sample problems and allows clearing', async () => {
-      const result = await seedDatabase(10);
-      expect(result.problemsCount).toBe(10);
+  describe('Clear all local data', () => {
+    it('clears all tables and restores default settings', async () => {
+      await problemsRepo.create({
+        number: 1,
+        title: 'Two Sum',
+        url: null,
+        statement: 'Given an array...',
+        difficulty: 'Easy',
+        topics: [],
+        patterns: [],
+        status: 'Not Started',
+        confidence: null,
+        timeSpentMinutes: null,
+        hintsUsed: 0,
+        starred: false,
+        userTimeComplexity: null,
+        userSpaceComplexity: null,
+        notes: '',
+        language: 'python',
+        dateFirstAttempt: null,
+        dateSolved: null,
+      });
+      expect((await problemsRepo.getAll()).length).toBe(1);
 
-      const problems = await problemsRepo.getAll();
-      expect(problems.length).toBe(10);
+      await clearAllLocalData();
 
-      await clearDatabase();
-      const afterClear = await problemsRepo.getAll();
-      expect(afterClear.length).toBe(0);
+      expect((await problemsRepo.getAll()).length).toBe(0);
+      expect((await settingsRepo.get()).theme).toBe('system');
     });
   });
 });

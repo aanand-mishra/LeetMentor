@@ -1,10 +1,11 @@
 /**
- * Audio capture helpers for on-device speech-to-text.
+ * Audio capture helpers for voice dictation.
  *
- * Whisper consumes 16 kHz mono PCM. Browser recorders emit compressed audio
+ * Gemini consumes 16 kHz mono PCM. Browser recorders emit compressed audio
  * (usually 48 kHz Opus in WebM), so every clip goes through
- * `decodeTo16kMono()` before transcription. The resampler itself is a pure
- * function (`downsampleTo16kMono`) kept separate for unit testing.
+ * `decodeTo16kMono()` before transcription, and is WAV-encoded via
+ * `encodeWav16kMono()` for upload. The resampler itself is a pure function
+ * (`downsampleTo16kMono`) kept separate for unit testing.
  */
 
 const TARGET_SAMPLE_RATE = 16000;
@@ -86,7 +87,7 @@ function blobToArrayBuffer(blob: Blob): Promise<ArrayBuffer> {
   });
 }
 
-/** Decodes a recorded blob and returns 16 kHz mono PCM ready for Whisper. */
+/** Decodes a recorded blob and returns 16 kHz mono PCM ready for transcription. */
 export async function decodeTo16kMono(blob: Blob): Promise<Float32Array> {
   const Ctor = getAudioContextConstructor();
   if (!Ctor) throw new Error('Audio decoding is not supported in this browser.');

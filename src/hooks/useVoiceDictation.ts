@@ -7,15 +7,6 @@ import {
   isAudioCaptureSupported,
   pickRecordingMimeType,
 } from '../lib/voice/audio';
-import {
-  getSttModel,
-  getTranscriber,
-  transcribe16kAudio,
-  normalizeTranscriptionProvider,
-  type ModelLoadProgress,
-  type SpeechTranscriber,
-  type TranscriptionProvider,
-} from '../lib/voice/stt';
 import { requestVoiceTranscription } from '../lib/gemini/client';
 
 export type VoiceDictationStatus = 'idle' | 'recording' | 'transcribing';
@@ -24,10 +15,6 @@ export type VoiceDictationStatus = 'idle' | 'recording' | 'transcribing';
 const TARGET_MIN_SAMPLES = 8000;
 
 interface UseVoiceDictationOptions {
-  /** 'gemini' (cloud Flash transcription) or 'on-device' (local Whisper). */
-  provider: TranscriptionProvider;
-  /** Whisper model id — only used when provider is 'on-device'. */
-  modelId: string;
   /** Fired once per transcribed take (never empty — silence yields onError). */
   onTranscript: (text: string) => void;
   onError?: (message: string) => void;
@@ -35,8 +22,6 @@ interface UseVoiceDictationOptions {
 
 export interface VoiceDictation {
   status: VoiceDictationStatus;
-  /** Non-null while on-device model weights are downloading (first use). */
-  modelProgress: ModelLoadProgress | null;
   /** Elapsed recording time in seconds (for the m:ss timer). */
   recordingSeconds: number;
   isSupported: boolean;
@@ -46,22 +31,15 @@ export interface VoiceDictation {
 }
 
 /**
- * Record → transcribe → callback, via Gemini Flash (cloud, default) or local
- * Whisper (on-device fallback).
+ * Record → transcribe → callback, via Gemini Flash (cloud).
  *
- * Gemini path: 16 kHz mono PCM is WAV-encoded in-browser (universally
- * accepted `audio/wav`, unlike recorder-native WebM/Opus) and sent through
- * the shared transport — same queue, spacing, backoff, and quota counting as
- * every other AI feature. No model download, works on every browser.
+ * 16 kHz mono PCM is WAV-encoded in-browser (universally accepted
+ * `audio/wav`, unlike recorder-native WebM/Opus) and sent through the shared
+ * transport — same queue, spacing, backoff, and quota counting as every other
+ * AI feature. Transcription failures surface the real provider error.
  */
-export function useVoiceDictation({
-  provider,
-  modelId,
-  onTranscript,
-  onError,
-}: UseVoiceDictationOptions): VoiceDictation {
+export function useVoiceDictation({ onTranscript, onError }: UseVoiceDictationOptions): VoiceDictation {
   const [status, setStatus] = useState<VoiceDictationStatus>('idle');
-  const [modelProgress, setModelProgress] = useState<ModelLoadProgress | null>(null);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isSupported] = useState(() => isAudioCaptureSupported());
 
@@ -75,10 +53,6 @@ export function useVoiceDictation({
   onTranscriptRef.current = onTranscript;
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
-  const providerRef = useRef(provider);
-  providerRef.current = normalizeTranscriptionProvider(provider);
-  const modelIdRef = useRef(modelId);
-  modelIdRef.current = modelId;
 
   const fail = useCallback((session: number, message: string) => {
     if (sessionRef.current !== session) return;
@@ -102,7 +76,6 @@ export function useVoiceDictation({
     });
     streamRef.current = null;
     chunksRef.current = [];
-    setModelProgress(null);
     setStatus('idle');
     onErrorRef.current?.(message);
   }, []);
@@ -123,34 +96,9 @@ export function useVoiceDictation({
       return;
     }
     const session = ++sessionRef.current;
-    const useOnDevice = providerRef.current === 'on-device';
 
-    // On-device only: model weights in the background (cached after first
-    // download). The Gemini path needs no download at all.
-    const modelPromise = useOnDevice
-      ? getTranscriber(modelIdRef.current, (p) => {
-          if (sessionRef.current === session) setModelProgress(p.ratio === 1 ? null : p);
-        })
-      : null;
-    if (modelPromise) {
-      modelPromise.then(
-        () => {
-          if (sessionRef.current === session) setModelProgress(null);
-        },
-        (err: unknown) => {
-          if (sessionRef.current !== session) return;
-          const detail = err instanceof Error ? err.message : '';
-          fail(
-            session,
-            `Could not load the speech model (one-time download needs internet). ${detail}`.trim()
-          );
-        }
-      );
-    }
-
-    // 2) Mic immediately — recording must never wait on the download.
-    let stream: MediaStream;
     const beginRecording = async () => {
+      let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } catch {
@@ -247,34 +195,14 @@ export function useVoiceDictation({
           return;
         }
 
+        // Cloud transcription: WAV-encode the PCM (universally accepted
+        // audio/wav) and let Gemini Flash transcribe it via the shared
+        // transport. Provider errors propagate verbatim.
         let text: string;
         try {
-          if (providerRef.current === 'on-device') {
-            let transcriber: SpeechTranscriber;
-            try {
-              transcriber = await getTranscriber(modelIdRef.current, (p) => {
-                if (sessionRef.current === session) setModelProgress(p.ratio === 1 ? null : p);
-              });
-            } catch {
-              fail(
-                session,
-                'Speech model is still downloading or failed to load. Check your connection and try again.'
-              );
-              return;
-            }
-            if (sessionRef.current !== session) return;
-            text = await transcribe16kAudio(
-              transcriber,
-              audio,
-              getSttModel(modelIdRef.current).englishOnly
-            );
-          } else {
-            // Cloud path: WAV-encode the PCM (universally accepted audio/wav)
-            // and let Gemini Flash transcribe it via the shared transport.
-            const wavBase64 = await blobToBase64(encodeWav16kMono(audio));
-            if (sessionRef.current !== session) return;
-            text = (await requestVoiceTranscription(wavBase64)).text;
-          }
+          const wavBase64 = await blobToBase64(encodeWav16kMono(audio));
+          if (sessionRef.current !== session) return;
+          text = (await requestVoiceTranscription(wavBase64)).text;
         } catch (err) {
           const detail = err instanceof Error ? err.message : '';
           fail(session, `Transcription failed. ${detail}`.trim());
@@ -284,7 +212,6 @@ export function useVoiceDictation({
         sessionRef.current += 1;
         recorderRef.current = null;
         streamRef.current = null;
-        setModelProgress(null);
         setStatus('idle');
         if (text) onTranscriptRef.current(text);
         else
@@ -307,7 +234,7 @@ export function useVoiceDictation({
   }, [status, start, stop]);
 
   // Unmount: kill timer, recorder, and mic tracks; late async results are
-  // dropped via the session guard. (Model download itself is shared/cached.)
+  // dropped via the session guard.
   useEffect(
     () => () => {
       sessionRef.current += 1;
@@ -330,5 +257,5 @@ export function useVoiceDictation({
     []
   );
 
-  return { status, modelProgress, recordingSeconds, isSupported, start, stop, toggle };
+  return { status, recordingSeconds, isSupported, start, stop, toggle };
 }

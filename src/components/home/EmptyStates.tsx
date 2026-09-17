@@ -1,13 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, FilterX, BookOpen } from 'lucide-react';
+import { Plus, FilterX } from 'lucide-react';
 
-interface NoProblemsProps {
-  onSeedData: () => Promise<void>;
-  isSeeding?: boolean;
-}
-
-export const ZeroProblemsEmptyState: React.FC<NoProblemsProps> = ({ onSeedData, isSeeding = false }) => {
+export const ZeroProblemsEmptyState: React.FC = () => {
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center max-w-lg mx-auto shadow-sm my-8">
       <h2 className="text-xl font-bold text-slate-900 dark:text-white">
@@ -25,16 +20,6 @@ export const ZeroProblemsEmptyState: React.FC<NoProblemsProps> = ({ onSeedData, 
           <Plus className="w-4 h-4" />
           Add your first problem
         </Link>
-
-        <button
-          type="button"
-          onClick={onSeedData}
-          disabled={isSeeding}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg text-sm transition-colors border border-slate-300 dark:border-slate-700 disabled:opacity-50"
-        >
-          <BookOpen className="w-4 h-4 text-indigo-500" />
-          {isSeeding ? 'Loading sample data...' : 'Load sample problems'}
-        </button>
       </div>
     </div>
   );

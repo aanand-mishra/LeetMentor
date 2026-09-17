@@ -201,7 +201,7 @@ export async function requestVoiceTranscription(
 
   if (!settings.geminiApiKey || !settings.geminiApiKey.trim()) {
     throw new GeminiError(
-      'Gemini API key is not configured. Add your key in Settings for cloud transcription, or switch to on-device Whisper in Settings.',
+      'Gemini API key is not configured. Add your key in Settings for cloud transcription.',
       400,
       'API_KEY_MISSING'
     );

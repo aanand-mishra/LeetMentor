@@ -13,19 +13,11 @@ import {
   ShieldAlert,
   RotateCw,
   ExternalLink,
-  Database,
 } from 'lucide-react';
 import { settingsRepo, clearAllLocalData } from '../db';
-import { seedDatabase } from '../db/seed';
 import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import type { Settings } from '../types';
-import {
-  STT_MODELS,
-  TRANSCRIPTION_PROVIDERS,
-  normalizeSttModelId,
-  normalizeTranscriptionProvider,
-} from '../lib/voice/stt';
 import {
   triggerExportDownload,
   validateExportPayload,
@@ -62,22 +54,6 @@ export const SettingsPage: React.FC = () => {
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const [isDeletingAll, setIsDeletingAll] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-
-  const handleSeedData = async (count: number) => {
-    try {
-      setIsSeeding(true);
-      const res = await seedDatabase(count);
-      toast.success(
-        `Successfully seeded ${count} problems! Total in database: ${res.problemsCount}`
-      );
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to seed database';
-      toast.error(msg);
-    } finally {
-      setIsSeeding(false);
-    }
-  };
 
   // Load settings on mount
   useEffect(() => {
@@ -565,6 +541,11 @@ export const SettingsPage: React.FC = () => {
               Flash models provide low latency and generous free-tier limits without incurring
               billing.
             </p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Voice dictation also runs on this model: the Dictate button in notes records your
+              voice and transcribes it here. It needs your API key, and audio counts toward your
+              daily quota.
+            </p>
           </div>
         )}
       </div>
@@ -604,51 +585,6 @@ export const SettingsPage: React.FC = () => {
             </select>
             <p className="text-[11px] text-slate-400">
               Pre-selected when creating problems or submitting attempts.
-            </p>
-          </div>
-
-          {/* Voice Dictation Provider */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Voice Transcription Provider
-            </label>
-            <select
-              value={normalizeTranscriptionProvider(settings.sttProvider)}
-              onChange={(e) => handleUpdateSetting('sttProvider', e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {TRANSCRIPTION_PROVIDERS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
-                </option>
-              ))}
-            </select>
-            <p className="text-[11px] text-slate-400">
-              Gemini Flash is the most accurate and needs your API key (audio is sent to Google and
-              counts toward your daily quota). On-device Whisper is private and works offline after
-              a one-time model download.
-            </p>
-          </div>
-
-          {/* Voice Dictation Model */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Speech-to-Text Model
-            </label>
-            <select
-              value={normalizeSttModelId(settings.sttModel)}
-              onChange={(e) => handleUpdateSetting('sttModel', e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {STT_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label} ({m.approxSize})
-                </option>
-              ))}
-            </select>
-            <p className="text-[11px] text-slate-400">
-              Applies when the provider above is on-device Whisper. Downloads once, then transcribes
-              100% on-device — mic audio never leaves this device.
             </p>
           </div>
 
@@ -857,52 +793,7 @@ export const SettingsPage: React.FC = () => {
         </p>
       </div>
 
-      {/* 5. Demo & Seed Data */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm space-y-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-            <Database className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Demo & Sample Data
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Populate the local database with realistic Leetcode problems (with attempts, reviews,
-              notes, and mentor hints) or high-volume performance test sets.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 pt-2">
-          <button
-            type="button"
-            disabled={isSeeding}
-            onClick={() => handleSeedData(20)}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 text-white text-xs font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          >
-            <Database className="w-3.5 h-3.5" />
-            <span>{isSeeding ? 'Seeding…' : 'Seed 20 sample problems'}</span>
-          </button>
-
-          <button
-            type="button"
-            disabled={isSeeding}
-            onClick={() => handleSeedData(2000)}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          >
-            <Database className="w-3.5 h-3.5" />
-            <span>{isSeeding ? 'Seeding…' : 'Seed 2,000 benchmark problems'}</span>
-          </button>
-        </div>
-
-        <p className="text-[11px] text-slate-400">
-          Note: Seeding adds to your existing dataset. To start completely fresh before seeding, use
-          &ldquo;Delete all data&rdquo; in the Danger Zone below.
-        </p>
-      </div>
-
-      {/* 6. Danger Zone (FR-8.7) */}
+      {/* 5. Danger Zone (FR-8.7) */}
       <div className="bg-rose-50/40 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 rounded-xl p-6 shadow-sm space-y-4">
         <div className="flex items-center gap-2.5 text-rose-700 dark:text-rose-400">
           <Trash2 className="w-5 h-5" />

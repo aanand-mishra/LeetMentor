@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, problemsRepo } from '../db';
-import { seedDatabase } from '../db/seed';
 import { SummaryBar } from '../components/home/SummaryBar';
 import { FilterPanel } from '../components/home/FilterPanel';
 import { ProblemTable } from '../components/home/ProblemTable';
@@ -10,13 +9,10 @@ import {
   NoFilterMatchesEmptyState,
 } from '../components/home/EmptyStates';
 import { useUrlFilters } from '../hooks/useUrlFilters';
-import { useToast } from '../hooks/useToast';
 import type { Status, Difficulty } from '../types';
 
 export const HomePage: React.FC = () => {
-  const toast = useToast();
   const { filters, page, setFilters, clearFilters } = useUrlFilters();
-  const [isSeeding, setIsSeeding] = useState(false);
 
   // Live query all problems for summary stats & topic/pattern index
   const rawProblems = useLiveQuery(() => db.problems.toArray(), []);
@@ -85,20 +81,6 @@ export const HomePage: React.FC = () => {
     }
   };
 
-  // Seed database action for empty state
-  const handleSeedData = async () => {
-    try {
-      setIsSeeding(true);
-      const res = await seedDatabase(200);
-      toast.success(`Loaded ${res.problemsCount} sample problems with attempts & notes!`);
-    } catch (err) {
-      console.error('Failed to seed database:', err);
-      toast.error('Failed to load sample data.');
-    } finally {
-      setIsSeeding(false);
-    }
-  };
-
   const hasAnyProblems = allProblems.length > 0;
   const hasFilterMatches = currentProblems.length > 0;
 
@@ -140,7 +122,7 @@ export const HomePage: React.FC = () => {
 
       {/* Results / Empty States */}
       {!hasAnyProblems && !loading ? (
-        <ZeroProblemsEmptyState onSeedData={handleSeedData} isSeeding={isSeeding} />
+        <ZeroProblemsEmptyState />
       ) : !hasFilterMatches && !loading ? (
         <NoFilterMatchesEmptyState onClearFilters={clearFilters} />
       ) : (

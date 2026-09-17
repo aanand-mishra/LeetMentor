@@ -2,40 +2,145 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Black-UI theme with a deep emerald accent. Single source of truth for
+ * both modes:
+ * - Light: paper-neutral surfaces (#FAFAFA page, #FFFFFF cards), near-black ink.
+ * - Dark: true-black scale (#09090B page, #131316 cards, #27272A raised).
+ * No gradients, no violet/blue glow. Accent is emerald-700 (#047857) in
+ * light mode, bright emerald (#10B981) in dark mode.
+ */
 @layer base {
   :root {
+    color-scheme: light;
+
+    /* Mode-aware tokens consumed by tailwind.config.js
+       (canvas / surface / line / ink / accent). */
+    --canvas: 250 250 250;
+    --surface: 255 255 255;
+    --surface-raised: 244 244 245;
+    --surface-overlay: 255 255 255;
+    --surface-sunken: 244 244 245;
+    --line: 228 228 231;
+    --line-strong: 212 212 216;
+    --ink: 9 9 11;
+    --ink-secondary: 82 82 91;
+    --ink-muted: 161 161 170;
+    /* Emerald action: deep green button on light surfaces. */
+    --accent: 4 120 87;
+    --accent-hover: 6 95 70;
+    --accent-contrast: 255 255 255;
+
+    /* Legacy aliases (kept for compatibility). */
     --bg-primary: #ffffff;
-    --bg-secondary: #f9fafb;
-    --bg-tertiary: #f3f4f6;
-    --text-primary: #111827;
-    --text-secondary: #4b5563;
-    --text-muted: #9ca3af;
-    --border-color: #e5e7eb;
+    --bg-secondary: #fafafa;
+    --bg-tertiary: #f4f4f5;
+    --text-primary: #09090b;
+    --text-secondary: #52525b;
+    --text-muted: #a1a1aa;
+    --border-color: #e4e4e7;
   }
 
   .dark {
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-tertiary: #334155;
-    --text-primary: #f8fafc;
-    --text-secondary: #cbd5e1;
-    --text-muted: #64748b;
-    --border-color: #334155;
+    color-scheme: dark;
+
+    --canvas: 9 9 11;
+    --surface: 19 19 22;
+    --surface-raised: 39 39 42;
+    --surface-overlay: 24 24 27;
+    --surface-sunken: 9 9 11;
+    --line: 39 39 42;
+    --line-strong: 63 63 70;
+    --ink: 244 244 245;
+    --ink-secondary: 161 161 170;
+    --ink-muted: 113 113 122;
+    /* Same classes invert: bright emerald button on black surfaces. */
+    --accent: 16 185 129;
+    --accent-hover: 52 211 153;
+    --accent-contrast: 2 44 34;
+
+    --bg-primary: #131316;
+    --bg-secondary: #09090b;
+    --bg-tertiary: #27272a;
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+    --border-color: #27272a;
+  }
+
+  html {
+    @apply antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   body {
-    @apply bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 antialiased min-h-screen font-sans;
+    @apply bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen font-sans transition-colors duration-200;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  /* Native controls (checkboxes, radios, range) follow the accent. */
+  input, progress {
+    accent-color: #047857;
+  }
+  .dark input, .dark progress {
+    accent-color: #10b981;
   }
 
   code, pre, kbd {
     @apply font-mono;
   }
+
+  /* Emerald text selection. */
+  ::selection {
+    background: #047857;
+    color: #ffffff;
+  }
+  .dark ::selection {
+    background: #10b981;
+    color: #022c22;
+  }
+
+  /* Thin neutral scrollbars that suit a black UI. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d4d4d8 transparent;
+  }
+  .dark * {
+    scrollbar-color: #3f3f46 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 999px;
+  }
+  .dark *::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+  }
 }
 
-/* Custom focus ring for WCAG AA accessibility */
+/* Emerald focus ring (WCAG AA) — flat, no glow. */
 *:focus-visible {
-  @apply outline-none ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-slate-900;
+  @apply outline-none ring-2 ring-emerald-600 dark:ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-[#09090B];
+}
+
+/*
+ * The emerald action inverts per mode (deep green button / bright green
+ * button), but every `bg-indigo-600` usage pairs with `text-white`.
+ * Re-ink the label (and icons via currentColor) so dark mode reads
+ * dark-on-bright.
+ */
+.dark .bg-indigo-600 {
+  color: #022c22;
 }
 
 /* Markdown typography and KaTeX enhancements */
@@ -53,20 +158,38 @@
   font-weight: 600;
 }
 
+/* Fallback link treatment so unstyled markdown links match the accent. */
+.markdown-body a {
+  color: #047857;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: rgba(4, 120, 87, 0.4);
+}
+
+.markdown-body a:hover {
+  text-decoration-color: currentColor;
+}
+
+.dark .markdown-body a {
+  color: #34d399;
+  text-decoration-color: rgba(52, 211, 153, 0.45);
+}
+
 .markdown-body hr {
   border: 0;
   height: 1px;
-  background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.3), transparent);
+  background: linear-gradient(to right, transparent, rgba(161, 161, 170, 0.35), transparent);
   margin: 1.5rem 0;
 }
 
 .katex {
   font-size: 1.05em !important;
-  color: #4f46e5;
+  color: #047857;
 }
 
 .dark .katex {
-  color: #818cf8;
+  color: #34d399;
 }
 
 /* Code block syntax highlighting overrides to remove unwanted background/highlight bands */
@@ -78,4 +201,3 @@ code[class*="language-"],
   background-color: transparent !important;
   text-shadow: none !important;
 }
-

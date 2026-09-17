@@ -47,8 +47,6 @@ const DEFAULT_SETTINGS: Settings = {
   model: 'gemini-flash-lite-latest',
   defaultLanguage: 'python',
   responseLanguage: 'English',
-  sttModel: 'tiny',
-  sttProvider: 'gemini',
   theme: 'system',
   temperature: 0.4,
   dailyRequestCount: 0,

@@ -22,13 +22,6 @@ import { requestNotesReview } from '../../lib/gemini/client';
 import { useToast } from '../../hooks/useToast';
 import { useVoiceDictation } from '../../hooks/useVoiceDictation';
 import { VoiceDictateButton } from './VoiceDictateButton';
-import {
-  DEFAULT_STT_MODEL_ID,
-  DEFAULT_TRANSCRIPTION_PROVIDER,
-  normalizeSttModelId,
-  normalizeTranscriptionProvider,
-  type TranscriptionProvider,
-} from '../../lib/voice/stt';
 
 interface Props {
   problem: Problem;
@@ -57,10 +50,6 @@ export const NotesTab: React.FC<Props> = ({
   const [isReviewing, setIsReviewing] = useState(false);
   const [copiedTakeawayId, setCopiedTakeawayId] = useState<string | null>(null);
   const [expandedReviews, setExpandedReviews] = useState<Record<string, boolean>>({});
-  const [sttModelId, setSttModelId] = useState<string>(DEFAULT_STT_MODEL_ID);
-  const [sttProvider, setSttProvider] = useState<TranscriptionProvider>(
-    DEFAULT_TRANSCRIPTION_PROVIDER
-  );
 
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -118,24 +107,6 @@ export const NotesTab: React.FC<Props> = ({
     applyNotesText(e.target.value);
   };
 
-  // Transcription provider + on-device STT model (Settings).
-  useEffect(() => {
-    let cancelled = false;
-    settingsRepo
-      .get()
-      .then((s) => {
-        if (cancelled) return;
-        setSttModelId(normalizeSttModelId(s.sttModel));
-        setSttProvider(normalizeTranscriptionProvider(s.sttProvider));
-      })
-      .catch(() => {
-        // Keep defaults when settings are unreadable.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   /**
    * Splices a transcribed take at the caret (or appends at the end when the
    * editor isn't focused), normalizing boundary whitespace so words never
@@ -184,8 +155,6 @@ export const NotesTab: React.FC<Props> = ({
   );
 
   const voice = useVoiceDictation({
-    provider: sttProvider,
-    modelId: sttModelId,
     onTranscript: insertTextAtCursor,
     onError: (message) => toast.error(message),
   });
@@ -390,10 +359,9 @@ export const NotesTab: React.FC<Props> = ({
               {charCount}/50 chars min
             </div>
 
-            {/* On-device voice dictation (hidden where mic capture is unavailable) */}
+            {/* Voice dictation (hidden where mic capture is unavailable) */}
             <VoiceDictateButton
               status={voice.status}
-              modelProgress={voice.modelProgress}
               recordingSeconds={voice.recordingSeconds}
               isSupported={voice.isSupported}
               disabled={isReviewing}
@@ -450,21 +418,11 @@ export const NotesTab: React.FC<Props> = ({
               <span className="leading-relaxed">
                 {voice.status === 'recording' ? (
                   <span>
-                    Recording… click <span className="font-semibold">Stop</span> when done.
-                    {sttProvider === 'gemini'
-                      ? ' Gemini Flash transcribes it right after.'
-                      : ' Transcription runs on-device right after.'}
-                  </span>
-                ) : voice.modelProgress && voice.modelProgress.ratio !== null ? (
-                  <span>
-                    Downloading speech model (one-time)…
-                    <span className="font-mono font-semibold">
-                      {' '}
-                      {Math.round(voice.modelProgress.ratio * 100)}%
-                    </span>
+                    Recording… click <span className="font-semibold">Stop</span> when done. Gemini
+                    Flash transcribes it right after.
                   </span>
                 ) : (
-                  <span>Transcribing on-device… your words appear below in a moment.</span>
+                  <span>Transcribing with Gemini… your words appear below in a moment.</span>
                 )}
               </span>
             </div>

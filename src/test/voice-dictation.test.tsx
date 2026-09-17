@@ -10,34 +10,16 @@ import {
   encodeWav16kMono,
   formatRecordingTime,
 } from '../lib/voice/audio';
-import {
-  DEFAULT_TRANSCRIPTION_PROVIDER,
-  aggregateProgress,
-  extractTranscriptText,
-  normalizeSttModelId,
-  normalizeTranscriptionProvider,
-  transcribe16kAudio,
-  STT_MODELS,
-} from '../lib/voice/stt';
 import { VoiceDictateButton } from '../components/problem/VoiceDictateButton';
 import { NotesTab } from '../components/problem/NotesTab';
 import { ToastProvider } from '../context/ToastContext';
-import { problemsRepo, settingsRepo, clearAllLocalData } from '../db';
+import { problemsRepo, clearAllLocalData } from '../db';
 import { requestVoiceTranscription } from '../lib/gemini/client';
 import type { Problem } from '../types';
 
 // ---------------------------------------------------------------------------
 // Fakes: MediaRecorder, getUserMedia, AudioContext (jsdom ships none).
-// The transformers runtime itself is mocked at the module boundary below.
 // ---------------------------------------------------------------------------
-vi.mock('../lib/voice/stt', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../lib/voice/stt')>();
-  return {
-    ...actual,
-    getTranscriber: vi.fn(async () => fakeTranscriber),
-  };
-});
-
 vi.mock('../lib/gemini/client', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../lib/gemini/client')>();
   return {
@@ -47,16 +29,6 @@ vi.mock('../lib/gemini/client', async (importOriginal) => {
 });
 
 const fakeGeminiText = 'gemini transcript of spoken notes';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const transcribedInputs: any[] = [];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const transcribedOptions: any[] = [];
-async function fakeTranscriber(audio: Float32Array, options?: Record<string, unknown>) {
-  transcribedInputs.push(audio);
-  transcribedOptions.push(options || {});
-  return { text: 'mocked transcript of spoken notes' };
-}
 
 class MockMediaRecorder {
   static instances: MockMediaRecorder[] = [];
@@ -106,8 +78,6 @@ const mockStream = { getTracks: () => mockTracks };
 
 function installFakes() {
   MockMediaRecorder.instances = [];
-  transcribedInputs.length = 0;
-  transcribedOptions.length = 0;
   (window as unknown as Record<string, unknown>).MediaRecorder = MockMediaRecorder;
   (window as unknown as Record<string, unknown>).AudioContext = MockAudioContext;
   Object.defineProperty(navigator, 'mediaDevices', {
@@ -186,77 +156,11 @@ describe('lib/voice/audio — pure helpers', () => {
   });
 });
 
-describe('lib/voice/stt — pure helpers', () => {
-  it('defaults transcription to Gemini Flash and validates stored values', () => {
-    expect(DEFAULT_TRANSCRIPTION_PROVIDER).toBe('gemini');
-    expect(normalizeTranscriptionProvider('on-device')).toBe('on-device');
-    expect(normalizeTranscriptionProvider(' GEMINI ')).toBe('gemini');
-    expect(normalizeTranscriptionProvider('whisper')).toBe('gemini');
-    expect(normalizeTranscriptionProvider(null)).toBe('gemini');
-  });
-
-  it('ships tiny + base + small models and validates stored ids', () => {
-    expect(STT_MODELS.map((m) => m.id)).toEqual(['tiny', 'base', 'small']);
-    expect(normalizeSttModelId('base')).toBe('base');
-    expect(normalizeSttModelId(' TINY ')).toBe('tiny');
-    expect(normalizeSttModelId('xxl')).toBe('tiny');
-    expect(normalizeSttModelId(null)).toBe('tiny');
-  });
-
-  it('normalizes every pipeline output shape to text', () => {
-    expect(extractTranscriptText('  hello world ')).toBe('hello world');
-    expect(extractTranscriptText({ text: ' chunk one ' })).toBe('chunk one');
-    expect(extractTranscriptText([{ text: 'a' }, { text: 'b' }])).toBe('a b');
-    expect(extractTranscriptText([{ text: 'a' }, 'b'])).toBe('a b');
-    expect(extractTranscriptText(null)).toBe('');
-    expect(extractTranscriptText(42)).toBe('');
-  });
-
-  it('aggregates per-file download progress', () => {
-    expect(aggregateProgress(new Map()).ratio).toBeNull();
-    const p = aggregateProgress(
-      new Map([
-        ['a.onnx', { loaded: 50, total: 100 }],
-        ['b.onnx', { loaded: 100, total: 100 }],
-      ])
-    );
-    expect(p.loadedBytes).toBe(150);
-    expect(p.totalBytes).toBe(200);
-    expect(p.ratio).toBeCloseTo(0.75, 5);
-  });
-
-  it('omits language/task kwargs for English-only models (they throw otherwise)', async () => {
-    // Regression: whisper-tiny.en rejects `language`/`task` with
-    // "Cannot specify 'task' or 'language' for an English-only model".
-    const text = await transcribe16kAudio(fakeTranscriber, new Float32Array(16000), true);
-    expect(text).toBe('mocked transcript of spoken notes');
-    const sent = transcribedOptions[transcribedOptions.length - 1];
-    expect(sent).not.toHaveProperty('language');
-    expect(sent).not.toHaveProperty('task');
-    expect(sent).toMatchObject({ chunk_length_s: 30, stride_length_s: 5 });
-  });
-
-  it('pins language/task for multilingual models', async () => {
-    await transcribe16kAudio(fakeTranscriber, new Float32Array(16000), false);
-    expect(transcribedOptions[transcribedOptions.length - 1]).toMatchObject({
-      language: 'en',
-      task: 'transcribe',
-    });
-  });
-
-  it('returns empty text for empty audio without calling the model', async () => {
-    const calls = transcribedOptions.length;
-    await expect(transcribe16kAudio(fakeTranscriber, new Float32Array(0), true)).resolves.toBe('');
-    expect(transcribedOptions.length).toBe(calls);
-  });
-});
-
 describe('VoiceDictateButton', () => {
   it('renders nothing when unsupported', () => {
     const { container } = render(
       <VoiceDictateButton
         status="idle"
-        modelProgress={null}
         recordingSeconds={0}
         isSupported={false}
         onToggle={() => {}}
@@ -265,45 +169,27 @@ describe('VoiceDictateButton', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('reflects recording timer, transcribing, and download progress', () => {
+  it('reflects recording timer and transcribing state', () => {
     const { rerender } = render(
-      <VoiceDictateButton
-        status="idle"
-        modelProgress={null}
-        recordingSeconds={0}
-        isSupported
-        onToggle={() => {}}
-      />
+      <VoiceDictateButton status="idle" recordingSeconds={0} isSupported onToggle={() => {}} />
     );
     expect(screen.getByRole('button', { name: /dictate notes by voice/i })).toBeInTheDocument();
 
     rerender(
-      <VoiceDictateButton
-        status="recording"
-        modelProgress={null}
-        recordingSeconds={65}
-        isSupported
-        onToggle={() => {}}
-      />
+      <VoiceDictateButton status="recording" recordingSeconds={65} isSupported onToggle={() => {}} />
     );
     expect(screen.getByRole('button', { name: /stop recording \(1:05\)/i })).toBeInTheDocument();
 
     rerender(
-      <VoiceDictateButton
-        status="transcribing"
-        modelProgress={{ loadedBytes: 1, totalBytes: 2, ratio: 0.5 }}
-        recordingSeconds={0}
-        isSupported
-        onToggle={() => {}}
-      />
+      <VoiceDictateButton status="transcribing" recordingSeconds={0} isSupported onToggle={() => {}} />
     );
     const btn = screen.getByRole('button', { name: /transcribing/i });
     expect(btn).toBeDisabled();
-    expect(btn).toHaveTextContent('Model 50%');
+    expect(btn).toHaveTextContent('Transcribing…');
   });
 });
 
-describe('NotesTab + on-device STT integration', () => {
+describe('NotesTab + Gemini transcription integration', () => {
   let sampleProblem: Problem;
 
   beforeEach(async () => {
@@ -334,7 +220,7 @@ describe('NotesTab + on-device STT integration', () => {
 
   afterEach(() => uninstallFakes());
 
-  it('record → stop → Gemini transcript lands in the editor (default provider)', async () => {
+  it('record → stop → Gemini transcript lands in the editor', async () => {
     const user = userEvent.setup();
     render(
       <ToastProvider>
@@ -359,12 +245,12 @@ describe('NotesTab + on-device STT integration', () => {
     expect(
       Uint8Array.from(atob(sentBase64.slice(0, 8)), (c) => c.charCodeAt(0)).slice(0, 4)
     ).toEqual(new Uint8Array([82, 73, 70, 70])); // 'RIFF'
-    // On-device model was never touched on the Gemini path.
-    expect(transcribedInputs.length).toBe(0);
   });
 
-  it('record → stop → on-device transcript when provider is on-device', async () => {
-    await settingsRepo.update({ sttProvider: 'on-device' });
+  it('Gemini failure surfaces the real provider error', async () => {
+    vi.mocked(requestVoiceTranscription).mockRejectedValueOnce(
+      new Error('API quota exhausted for the day')
+    );
     const user = userEvent.setup();
     render(
       <ToastProvider>
@@ -376,17 +262,13 @@ describe('NotesTab + on-device STT integration', () => {
     await screen.findByRole('button', { name: /stop recording/i });
     await user.click(screen.getByRole('button', { name: /stop recording/i }));
 
+    // The verbatim provider detail reaches the user — no silent fallback.
+    await screen.findByText(/transcription failed\. api quota exhausted for the day/i);
+    // Nothing was inserted into the editor.
     const textarea = screen.getByPlaceholderText(
       /What was the key insight\?/i
     ) as HTMLTextAreaElement;
-    await waitFor(() => expect(textarea.value).toContain('mocked transcript of spoken notes'));
-    // 16kHz mono PCM actually reached the (mocked) model.
-    expect(transcribedInputs.length).toBe(1);
-    expect(transcribedInputs[0].length).toBe(16000);
-    // End-to-end regression: English-only model must not get language/task.
-    expect(transcribedOptions[0]).not.toHaveProperty('language');
-    expect(transcribedOptions[0]).not.toHaveProperty('task');
-    expect(requestVoiceTranscription).not.toHaveBeenCalled();
+    expect(textarea.value).toBe('');
   });
 
   it('mic denial surfaces an actionable error and keeps typed notes working', async () => {

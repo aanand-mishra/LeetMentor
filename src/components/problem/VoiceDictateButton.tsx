@@ -1,13 +1,10 @@
 import React from 'react';
 import { Loader2, Mic, Square } from 'lucide-react';
 import type { VoiceDictationStatus } from '../../hooks/useVoiceDictation';
-import type { ModelLoadProgress } from '../../lib/voice/stt';
 import { formatRecordingTime } from '../../lib/voice/audio';
 
 interface Props {
   status: VoiceDictationStatus;
-  /** Non-null while model weights download (first use only). */
-  modelProgress: ModelLoadProgress | null;
   recordingSeconds: number;
   /** False when mic/MediaRecorder/secure-context is missing — renders nothing. */
   isSupported: boolean;
@@ -16,14 +13,13 @@ interface Props {
 }
 
 /**
- * Mic toggle for on-device notes dictation. Tiny by design: the heavy state
- * (download progress, recording timer, transcribing spinner) is conveyed
- * through this one control; longer explanations live in the status strip
- * rendered by the parent next to the editor.
+ * Mic toggle for voice dictation. Tiny by design: the recording timer and
+ * transcribing spinner are conveyed through this one control; longer
+ * explanations live in the status strip rendered by the parent next to
+ * the editor.
  */
 export const VoiceDictateButton: React.FC<Props> = ({
   status,
-  modelProgress,
   recordingSeconds,
   isSupported,
   disabled = false,
@@ -33,11 +29,6 @@ export const VoiceDictateButton: React.FC<Props> = ({
 
   const isRecording = status === 'recording';
   const isTranscribing = status === 'transcribing';
-  const downloading = modelProgress !== null && modelProgress.ratio !== 1;
-  const pct =
-    modelProgress?.ratio !== null && modelProgress?.ratio !== undefined
-      ? Math.round(modelProgress.ratio * 100)
-      : null;
 
   return (
     <button
@@ -49,15 +40,15 @@ export const VoiceDictateButton: React.FC<Props> = ({
         isRecording
           ? `Stop recording (${formatRecordingTime(recordingSeconds)})`
           : isTranscribing
-            ? 'Transcribing on-device'
-            : 'Dictate notes by voice (on-device AI)'
+            ? 'Transcribing with Gemini'
+            : 'Dictate notes by voice'
       }
       title={
         isRecording
-          ? 'Stop and transcribe (all on-device)'
+          ? 'Stop and transcribe'
           : isTranscribing
             ? 'Transcribing…'
-            : 'Record voice, transcribe on-device with Whisper'
+            : 'Record voice, transcribe with Gemini Flash'
       }
       className={`px-3 py-1.5 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all disabled:opacity-60 ${
         isRecording
@@ -77,12 +68,12 @@ export const VoiceDictateButton: React.FC<Props> = ({
       ) : isTranscribing ? (
         <>
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          <span>{downloading && pct !== null ? `Model ${pct}%…` : 'Transcribing…'}</span>
+          <span>Transcribing…</span>
         </>
       ) : (
         <>
           <Mic className="w-3.5 h-3.5" />
-          <span>{downloading && pct !== null ? `Model ${pct}%` : 'Dictate'}</span>
+          <span>Dictate</span>
         </>
       )}
     </button>
