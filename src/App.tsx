@@ -4,7 +4,6 @@ import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Header } from './components/layout/Header';
-import { DataDurabilityBanner } from './components/layout/DataDurabilityBanner';
 import { ShortcutsModal } from './components/common/ShortcutsModal';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 
@@ -27,7 +26,6 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       <Header onOpenShortcuts={() => setShortcutsOpen(true)} />
-      <DataDurabilityBanner />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
         <Routes>
