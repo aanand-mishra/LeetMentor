@@ -36,20 +36,31 @@ Spreadsheets track dates and links, but they cannot guide your thinking or revie
    - Generates a reusable key takeaway and **3 active recall questions** (stored without answers) to test your conceptual understanding weeks later.
 
 ### Core Architectural Principles
+
 - **Local-First:** All user data (problems, attempts, reviews, notes, hints) lives inside browser **IndexedDB** (`dsa-tracker` db v1) via Dexie.js. No backend, no accounts, and no sync server.
 - **Works Offline:** Every feature except the three AI features works with zero network connection.
-- **Zero Fabricated Data:** Problem details and statements are manually entered or pasted by the user.
+- **Zero Fabricated Data:** Problem details and statements are manually entered or pasted by the user — or auto-filled from the bundled offline LeetCode catalog (see below).
 - **Privacy & Security:** Zero analytics, zero telemetry, and zero third-party CDN scripts.
+
+### LeetCode Catalog Auto-Fill
+
+The **Add Problem** (`/problem/new`) and **Edit Problem** forms start with a **Quick fill from LeetCode catalog** search box. Type a question number (e.g. `1`) or title (e.g. `Two Sum`), pick the match, and the form auto-fills number, title, URL, difficulty, topics, patterns, and a statement stub linking to the official description. Everything remains editable afterwards.
+
+- **Coverage:** 4,055 questions (numbers, titles, URL slugs, difficulties mirrored from LeetCode's public listing; topic tags for the ~800 most-solved questions, patterns heuristically derived from those tags).
+- **Offline & private:** the catalog ships inside the app bundle as a lazily-loaded chunk — no network request, no tracking.
+- **Copyright-safe statements:** full LeetCode descriptions are not bundled; the stub points at the official page. Paste the full statement into the field for the best mentor quality.
 
 ---
 
 ## 2. Quick Start & Local Run
 
 ### Prerequisites
+
 - Node.js 18+ (Node.js 20 or 22 LTS recommended)
 - npm 9+
 
 ### Installation & Development
+
 ```bash
 # 1. Clone repository
 git clone https://github.com/username/Leetcode-Tracker.git
@@ -61,18 +72,20 @@ npm install
 # 3. Start development server
 npm run dev
 ```
+
 Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ### Available Scripts
-| Command | Description |
-|---|---|
-| `npm run dev` | Starts Vite development server with HMR |
-| `npm run build` | Compiles TypeScript (`tsc -b`) and bundles static assets into `dist/` |
-| `npm run preview` | Previews the production build locally |
-| `npm run lint` | Runs ESLint (`--max-warnings 0`) |
-| `npm run format` | Formats codebase with Prettier |
-| `npm run format:check` | Checks code formatting |
-| `npm run test` | Runs Vitest unit and integration test suite |
+
+| Command                 | Description                                                              |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `npm run dev`           | Starts Vite development server with HMR                                  |
+| `npm run build`         | Compiles TypeScript (`tsc -b`) and bundles static assets into `dist/`    |
+| `npm run preview`       | Previews the production build locally                                    |
+| `npm run lint`          | Runs ESLint (`--max-warnings 0`)                                         |
+| `npm run format`        | Formats codebase with Prettier                                           |
+| `npm run format:check`  | Checks code formatting                                                   |
+| `npm run test`          | Runs Vitest unit and integration test suite                              |
 | `npm run test:coverage` | Runs Vitest with v8 coverage analysis (verifies ≥70% coverage threshold) |
 
 ---
@@ -82,6 +95,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 The application calls Google's Generative Language API directly from your browser (CORS-enabled). No backend proxy or build-time environment variables are needed.
 
 ### Step-by-Step Instructions:
+
 1. Navigate to **[Google AI Studio](https://aistudio.google.com/)**.
 2. Sign in with your Google account.
 3. In the left navigation or top bar, click **"Get API key"** (or **"Create API key"**).
@@ -107,10 +121,13 @@ The application calls Google's Generative Language API directly from your browse
 ## 5. Data Durability, Backups & Portability
 
 ### IndexedDB Storage
+
 Unlike `localStorage` (which is synchronous, blocks the main thread, and is capped at ~5MB), Leetcode Tracker uses **IndexedDB** via **Dexie.js**. This enables storing thousands of code attempts, comprehensive markdown notes, and AI critique history without hitting storage walls.
 
 ### Backups (Export & Import)
+
 Navigate to **Settings** (`/settings`) to manage your data:
+
 - **Export Backup:** Downloads a single JSON file named `dsa-tracker-export-YYYY-MM-DD.json`.
   - **Security Guarantee:** The `geminiApiKey` is **strictly stripped** before serialization. Your API key is never exported.
 - **Import Backup:** Select any previously exported JSON backup.
@@ -123,6 +140,7 @@ Navigate to **Settings** (`/settings`) to manage your data:
 ## 6. Demo & Sample Data
 
 You can seed realistic data directly from the application UI without manual entry:
+
 1. Navigate to **Settings** (`/settings`).
 2. Scroll to the **Demo & Sample Data** section:
    - **Seed 20 sample problems:** Populates realistic Leetcode questions (Two Sum, 3Sum, LRU Cache, Merge Intervals, etc.) complete with past code attempts, line diffs, code reviews, markdown notes, and mentor hints.
@@ -135,15 +153,15 @@ You can seed realistic data directly from the application UI without manual entr
 
 Press `?` anywhere in the app to display the keyboard shortcut modal:
 
-| Shortcut | Action | Scope |
-|---|---|---|
-| `/` | Focus problem search bar | Global (suppressed inside inputs) |
-| `n` | Navigate to Add Problem form | Global (suppressed inside inputs) |
-| `g` then `h` | Return to Home / Problem list | Global (suppressed inside inputs) |
-| `Esc` | Close dialog, modal, or review view | Everywhere |
-| `?` | Show keyboard shortcuts modal | Global (suppressed inside inputs) |
-| `Tab` | Insert literal tab indentation | Code editor textarea |
-| `Esc` then `Tab` | Move keyboard focus out of editor | Code editor textarea (accessibility escape) |
+| Shortcut         | Action                              | Scope                                       |
+| ---------------- | ----------------------------------- | ------------------------------------------- |
+| `/`              | Focus problem search bar            | Global (suppressed inside inputs)           |
+| `n`              | Navigate to Add Problem form        | Global (suppressed inside inputs)           |
+| `g` then `h`     | Return to Home / Problem list       | Global (suppressed inside inputs)           |
+| `Esc`            | Close dialog, modal, or review view | Everywhere                                  |
+| `?`              | Show keyboard shortcuts modal       | Global (suppressed inside inputs)           |
+| `Tab`            | Insert literal tab indentation      | Code editor textarea                        |
+| `Esc` then `Tab` | Move keyboard focus out of editor   | Code editor textarea (accessibility escape) |
 
 ---
 
@@ -151,21 +169,22 @@ Press `?` anywhere in the app to display the keyboard shortcut modal:
 
 Built strictly according to §3 of the product specification:
 
-| Layer | Chosen Technology | Notes |
-|---|---|---|
-| Framework | React 18 + TypeScript | `strict: true` enabled throughout |
-| Build Tool | Vite 6 | Code-split bundle (<115KB initial gzip) |
-| Routing | React Router v6 | Client-side routing with hash tab retention |
-| Styling | Tailwind CSS 3.4 | Class-based dark mode (`light`, `dark`, `system`) |
-| Persistence | IndexedDB via **Dexie.js** | Multi-table ACID transactions |
-| UI Icons | Lucide React | Accessible, lightweight SVG icons |
-| Code Highlight | `react-syntax-highlighter` | Prism `vscDarkPlus` theme |
-| Markdown | `react-markdown` + `remark-gfm` | Notes preview and mentor responses |
-| Date Handling | `date-fns` | Formatting and 14-day backup checks |
-| Testing | Vitest + React Testing Library | 14 test suites, 61 unit/integration tests |
-| Test Coverage | `@vitest/coverage-v8` | Storage (85.5%), utils (79.9%), prompts (88.6%) |
+| Layer          | Chosen Technology               | Notes                                             |
+| -------------- | ------------------------------- | ------------------------------------------------- |
+| Framework      | React 18 + TypeScript           | `strict: true` enabled throughout                 |
+| Build Tool     | Vite 6                          | Code-split bundle (<115KB initial gzip)           |
+| Routing        | React Router v6                 | Client-side routing with hash tab retention       |
+| Styling        | Tailwind CSS 3.4                | Class-based dark mode (`light`, `dark`, `system`) |
+| Persistence    | IndexedDB via **Dexie.js**      | Multi-table ACID transactions                     |
+| UI Icons       | Lucide React                    | Accessible, lightweight SVG icons                 |
+| Code Highlight | `react-syntax-highlighter`      | Prism `vscDarkPlus` theme                         |
+| Markdown       | `react-markdown` + `remark-gfm` | Notes preview and mentor responses                |
+| Date Handling  | `date-fns`                      | Formatting and 14-day backup checks               |
+| Testing        | Vitest + React Testing Library  | 14 test suites, 61 unit/integration tests         |
+| Test Coverage  | `@vitest/coverage-v8`           | Storage (85.5%), utils (79.9%), prompts (88.6%)   |
 
 **Substitutions against §3:**
+
 - None. All specified core libraries were utilized cleanly without requiring deprecation workarounds.
 
 ---
@@ -176,10 +195,10 @@ Built strictly according to §3 of the product specification:
 - **Client-Side Spacing:** Enforces a minimum 5-second gap between consecutive dispatches.
 - **Exponential Backoff:** On HTTP 429 rate limits, retries at 1s, 2s, 4s, 8s before failing gracefully, respecting `Retry-After` headers if returned.
 - **Precise Error Taxonomy:**
-  - `429` → *"Gemini rate limit reached. Free tier allows a limited number of requests per minute and per day. Retrying in Ns…"*
-  - `400` with `API_KEY_INVALID` → *"Your API key was rejected. Check it in Settings."*
-  - `403` → *"This key does not have access to the Generative Language API. Enable it in Google AI Studio."*
-  - Offline/Network failure → *"Could not reach Google. Check your connection. Everything else in the app works offline."*
+  - `429` → _"Gemini rate limit reached. Free tier allows a limited number of requests per minute and per day. Retrying in Ns…"_
+  - `400` with `API_KEY_INVALID` → _"Your API key was rejected. Check it in Settings."_
+  - `403` → _"This key does not have access to the Generative Language API. Enable it in Google AI Studio."_
+  - Offline/Network failure → _"Could not reach Google. Check your connection. Everything else in the app works offline."_
 - **No Silent Failures:** Inline failure toasts with persistent retry affordances. No full-page spinners.
 
 ---

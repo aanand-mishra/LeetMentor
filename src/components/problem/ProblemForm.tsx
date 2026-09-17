@@ -4,7 +4,9 @@ import { AlertCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { Problem, Difficulty, Status } from '../../types';
 import { TAXONOMY_TOPICS, TAXONOMY_PATTERNS } from '../../types';
+import type { LeetCodeCatalogEntry } from '../../data/leetcodeCatalog';
 import { TagInput } from '../common/TagInput';
+import { LeetCodePicker } from './LeetCodePicker';
 import { db, problemsRepo } from '../../db';
 
 const COMMON_LANGUAGES = [
@@ -49,7 +51,9 @@ export const ProblemForm: React.FC<Props> = ({
   cancelHref = '/',
 }) => {
   const [number, setNumber] = useState<string>(
-    initialData?.number !== undefined && initialData.number !== null ? String(initialData.number) : ''
+    initialData?.number !== undefined && initialData.number !== null
+      ? String(initialData.number)
+      : ''
   );
   const [title, setTitle] = useState(initialData?.title || '');
   const [url, setUrl] = useState(initialData?.url || '');
@@ -67,6 +71,55 @@ export const ProblemForm: React.FC<Props> = ({
   const [titleError, setTitleError] = useState<string | null>(null);
   const [urlError, setUrlError] = useState<string | null>(null);
   const [numberWarning, setNumberWarning] = useState<{ id: string; title: string } | null>(null);
+
+  // Catalog auto-fill source (null = manual entry). Kept for the confirmation
+  // chip only — the field states above remain the single source of truth and
+  // stay fully editable after a fill.
+  const [catalogEntry, setCatalogEntry] = useState<LeetCodeCatalogEntry | null>(null);
+  // Guards against out-of-order fills when the catalog chunk resolves slowly
+  // and the user picks two entries in quick succession (last pick wins).
+  const catalogSelectSeq = useRef(0);
+
+  /**
+   * Fill every catalog-mapped field from a LeetCode catalog entry.
+   * Status / language / time-spent are deliberately untouched: they describe
+   * *your* progress, not the problem itself.
+   *
+   * The catalog module (~4k entries) is imported lazily so it ships in its
+   * own code-split chunk instead of bloating the initial bundle.
+   */
+  const handleCatalogSelect = async (entry: LeetCodeCatalogEntry) => {
+    const seq = ++catalogSelectSeq.current;
+    const { toProblemFormPrefill } = await import('../../data/leetcodeCatalog');
+    if (seq !== catalogSelectSeq.current) return; // a newer pick superseded this one
+    const prefill = toProblemFormPrefill(entry);
+    setNumber(String(prefill.number));
+    setTitle(prefill.title);
+    setUrl(prefill.url);
+    setStatement(prefill.statement);
+    setDifficulty(prefill.difficulty);
+    setTopics(prefill.topics);
+    setPatterns(prefill.patterns);
+    setTitleError(null);
+    setUrlError(null);
+    setCatalogEntry(entry);
+  };
+
+  /** Dismiss the chip when the user manually diverges from the filled entry. */
+  const handleNumberChange = (value: string) => {
+    setNumber(value);
+    if (catalogEntry && value.trim() !== String(catalogEntry.number)) {
+      setCatalogEntry(null);
+    }
+  };
+
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+    if (titleError) setTitleError(null);
+    if (catalogEntry && value.trim() !== catalogEntry.title) {
+      setCatalogEntry(null);
+    }
+  };
 
   // Reactive settings from Dexie
   const liveSettings = useLiveQuery(() => db.settings.get('current'), []);
@@ -152,6 +205,13 @@ export const ProblemForm: React.FC<Props> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
+      <LeetCodePicker
+        onSelect={handleCatalogSelect}
+        selectedEntry={catalogEntry}
+        onClearSelection={() => setCatalogEntry(null)}
+        disabled={isSubmitting}
+      />
+
       <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
         <Link
           to={cancelHref}
@@ -173,7 +233,10 @@ export const ProblemForm: React.FC<Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Problem Number */}
         <div className="space-y-1.5 md:col-span-1">
-          <label htmlFor="problem-number" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label
+            htmlFor="problem-number"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Leetcode Number
           </label>
           <input
@@ -181,7 +244,7 @@ export const ProblemForm: React.FC<Props> = ({
             type="number"
             min="1"
             value={number}
-            onChange={(e) => setNumber(e.target.value)}
+            onChange={(e) => handleNumberChange(e.target.value)}
             placeholder="e.g. 75"
             className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
           />
@@ -189,23 +252,24 @@ export const ProblemForm: React.FC<Props> = ({
 
         {/* Title */}
         <div className="space-y-1.5 md:col-span-3">
-          <label htmlFor="problem-title" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label
+            htmlFor="problem-title"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Title <span className="text-rose-500">*</span>
           </label>
           <input
             id="problem-title"
             type="text"
             value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              if (titleError) setTitleError(null);
-            }}
+            onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="e.g. Sort colors"
             maxLength={200}
-            className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${titleError
-              ? 'border-rose-500 focus:ring-rose-500'
-              : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
-              }`}
+            className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${
+              titleError
+                ? 'border-rose-500 focus:ring-rose-500'
+                : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
+            }`}
           />
           {titleError && (
             <p className="flex items-center gap-1 text-xs text-rose-500 mt-1">
@@ -235,7 +299,10 @@ export const ProblemForm: React.FC<Props> = ({
 
       {/* URL */}
       <div className="space-y-1.5">
-        <label htmlFor="problem-url" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label
+          htmlFor="problem-url"
+          className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+        >
           Leetcode URL
         </label>
         <input
@@ -247,10 +314,11 @@ export const ProblemForm: React.FC<Props> = ({
             if (urlError) setUrlError(null);
           }}
           placeholder="https://leetcode.com/problems/sort-colors/"
-          className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${urlError
-            ? 'border-rose-500 focus:ring-rose-500'
-            : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
-            }`}
+          className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${
+            urlError
+              ? 'border-rose-500 focus:ring-rose-500'
+              : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
+          }`}
         />
         {urlError && (
           <p className="flex items-center gap-1 text-xs text-rose-500 mt-1">
@@ -262,7 +330,10 @@ export const ProblemForm: React.FC<Props> = ({
 
       {/* Statement (Large textarea, labeled per §5.3) */}
       <div className="space-y-1.5">
-        <label htmlFor="problem-statement" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+        <label
+          htmlFor="problem-statement"
+          className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+        >
           Problem statement (paste or summarize — improves mentor quality a lot)
         </label>
         <textarea
@@ -279,7 +350,10 @@ export const ProblemForm: React.FC<Props> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Difficulty */}
         <div className="space-y-1.5">
-          <label htmlFor="problem-difficulty" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label
+            htmlFor="problem-difficulty"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Difficulty <span className="text-rose-500">*</span>
           </label>
           <select
@@ -296,7 +370,10 @@ export const ProblemForm: React.FC<Props> = ({
 
         {/* Status */}
         <div className="space-y-1.5">
-          <label htmlFor="problem-status" className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label
+            htmlFor="problem-status"
+            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          >
             Status
           </label>
           <select
@@ -332,7 +409,9 @@ export const ProblemForm: React.FC<Props> = ({
       </div>
 
       {/* Language & Time spent (only shown when status === 'Solved') */}
-      <div className={`grid gap-4 ${status === 'Solved' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}>
+      <div
+        className={`grid gap-4 ${status === 'Solved' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}
+      >
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
             Language
