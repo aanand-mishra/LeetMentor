@@ -308,3 +308,209 @@ Hard rules:
 export function buildTranscriptionUserPrompt(): string {
   return 'Transcribe the attached voice note into text.';
 }
+
+// ==========================================
+// Interactive Solution Visualizer Prompt
+// ==========================================
+export function buildVisualizationSystemInstruction(
+  language: string = 'python',
+  responseLanguage: string = 'English'
+): string {
+  const lang = responseLanguage.trim();
+  const languageGuidance =
+    lang && lang.toLowerCase() !== 'english'
+      ? `\n\nHUMAN LANGUAGE REQUIREMENT:
+All explanation text, button titles, thought bubble explanations, and markdown walkthroughs should be written in ${lang} (using Latin/Roman script with standard English technical terms).`
+      : '';
+
+  return `You are an elite Data Structures & Algorithms Interactive Visualizer Architect and Mentor.
+The student is learning algorithms and needs to deeply understand and interactively visualize the algorithm for a LeetCode problem.
+
+Your goal is to build an interactive, single-file web application that visualizes the solution step-by-step, allows the student to play through the algorithm, and provides mentor explanations.${languageGuidance}
+
+OUTPUT FORMAT REQUIREMENTS:
+1. Wrap the entire single-file HTML/CSS/JS application inside a standard \`\`\`html ... \`\`\` code block.
+   - It must be a complete standalone HTML5 document starting with <!DOCTYPE html> and ending with </html>.
+   - All styling must be contained in a <style> block inside <head>.
+   - All logic and interactivity must be contained in a <script> block inside <body>.
+   - CRITICAL: Use ZERO external CDN dependencies, external fonts, or npm packages. No external links to Tailwind/Bootstrap/React/D3. Everything must run 100% offline using standard browser APIs (DOM, CSS transitions/animations, Canvas or SVG, and Web Audio API).
+2. Directly below the \`\`\`html ... \`\`\` code block, output a structured Markdown Walkthrough:
+   - ### Key Highlights of the Solution
+   - ### Algorithm Invariants & Mechanics
+   - ### Common Interview Traps & Pitfalls
+   - ### Complexity Analysis (Time & Space)
+3. CONCISENESS & COMPLETION MANDATE:
+   - Keep CSS clean, compact, and modern (dark theme tokens #0b0f19, #111827). Do NOT write repetitive, bloated CSS rules.
+   - Keep JavaScript clean, robust, and direct (under 250 lines). Avoid over-engineered state machines.
+   - COMPLETENESS GUARANTEE: You MUST output the entire HTML application to the end, closing with </html> and the closing \`\`\` code fence.
+
+APPLICATION DESIGN & FEATURE MANDATES:
+- Visual Theme: Ultra-modern, premium dark aesthetic (deep slate #0b0f19 or #0f172a background, sleek glassmorphism cards, glowing accent borders, smooth CSS animations, high-contrast readable tokens).
+- Interactive Dual Modes:
+  1. Guided Visualizer:
+     - Step Forward ("Step Next") and Step Backward ("Step Back") buttons.
+     - "Auto Play" / Pause toggle with a responsive speed control slider (e.g. 0.3s to 2.0s).
+     - "Reset" button to restart the animation from the beginning.
+     - Presets bar: Standard LeetCode example(s), edge cases (e.g., already sorted, reverse, duplicates, empty/single), and a Custom Input field with a "Set" button.
+  2. Interactive Practice Mode ("You are the Algorithm"):
+     - An interactive mode where the user is challenged to choose or click the correct next algorithmic action at the active state.
+     - Immediate visual/sound feedback, streak counter, and explanations when a misconception is triggered.
+- Dynamic Invariant Zone Bar:
+  - Visual breakdown displaying the algorithm's mathematical/logical invariants (e.g. partition zones: [Processed / Left], [Active Scanner / Window], [Unexplored], [Processed / Right]).
+- Visual Nodes & Pointer Badges:
+  - Prominent visual elements (array blocks, list nodes, tree nodes, or matrix cells) showing current values, indices, and active states.
+  - Distinct glowing badges pinpointing active pointers (e.g. LOW, MID, HIGH, SLOW, FAST, LEFT, RIGHT, CURR).
+  - Visual animation/transition for comparisons, swaps, pointer advances, or state updates.
+- Mentor's Thought Bubble & Live Code Trace:
+  - A dedicated "Thought Bubble" container that updates on every step, explaining the "WHY" behind the current operation.
+  - Highlights common interview traps (e.g. why a pointer pauses vs advances after a swap).
+  - Shows simulated active code snippet corresponding to the current step in ${language}.
+- Sound Effects (Web Audio API):
+  - Toggleable pleasant synthesized micro-tones (using AudioContext and OscillatorNode) for pointer moves, swaps, success chimes, and mistakes. Include a Mute/Unmute sound button.
+- Clean Layout & Fit:
+  - Design the visualizer to fit gracefully within standard desktop and laptop viewports (recommend width: 100%, max-width: 900px, responsive padding).
+
+Ensure the JavaScript code is bug-free, fully handles boundary conditions, and renders without syntax errors.`;
+}
+
+export function buildVisualizationUserPrompt(problem: Problem, latestAttempt?: Attempt): string {
+  const numberStr = problem.number !== null ? `${problem.number}. ` : '';
+  const statementStr =
+    problem.statement && problem.statement.trim()
+      ? problem.statement.trim()
+      : '(problem statement not provided — identify standard LeetCode problem from title and number)';
+
+  let attemptContext = '';
+  if (latestAttempt && latestAttempt.code && latestAttempt.code.trim()) {
+    attemptContext = `\nSTUDENT'S RECENT CODE ATTEMPT:
+\`\`\`${latestAttempt.language || 'python'}
+${latestAttempt.code}
+\`\`\`
+Address any specific edge cases or misconceptions from this attempt in the visualization and thought bubble.`;
+  }
+
+  return `PROBLEM: ${numberStr}${problem.title} (${problem.difficulty})
+TOPICS: ${(problem.topics || []).join(', ') || 'None'}
+PATTERNS: ${(problem.patterns || []).join(', ') || 'None'}
+
+PROBLEM STATEMENT:
+${statementStr}
+${attemptContext}
+
+Please build a complete, single-file interactive web application to visualize this problem and its optimal algorithm, featuring dual modes (Guided Visualizer & Interactive Practice), dynamic invariant zones, pointer badges, mentor thought bubble, and sound effects, followed by a markdown walkthrough.`;
+}
+
+export function parseVisualizationResponse(rawText: string): { html: string; explanation: string } {
+  if (!rawText || !rawText.trim()) {
+    return { html: '', explanation: '' };
+  }
+
+  const trimmed = rawText.trim();
+  let html = '';
+  let explanation = '';
+
+  // 1. Locate start of HTML: either opening fence preceding <!DOCTYPE/<html or directly <!DOCTYPE/<html
+  const htmlStartMatch = /(?:```+|~~~+)\s*(?:html|htm)?\s*\n?(?=<!DOCTYPE|<html)|<!DOCTYPE\s+html|<html/i.exec(trimmed);
+
+  if (htmlStartMatch) {
+    const matchIndex = htmlStartMatch.index;
+    const docStartMatch = /<!DOCTYPE\s+html|<html/i.exec(trimmed.slice(matchIndex));
+    const actualHtmlStart = matchIndex + (docStartMatch ? docStartMatch.index : 0);
+    const preText = trimmed.slice(0, matchIndex).trim();
+
+    // Look for closing </html>
+    const endTagMatch = /<\/html>/i.exec(trimmed.slice(actualHtmlStart));
+    if (endTagMatch) {
+      const endIdx = actualHtmlStart + endTagMatch.index + endTagMatch[0].length;
+      html = trimmed.slice(actualHtmlStart, endIdx).trim();
+
+      // Post text is everything after </html> (skipping closing fence)
+      const rest = trimmed.slice(endIdx).replace(/^\s*(?:```+|~~~+)?\s*/, '').trim();
+      explanation = [preText, rest].filter(Boolean).join('\n\n').trim();
+    } else {
+      // Truncated response without </html>
+      const candidate = trimmed.slice(actualHtmlStart);
+      // Look for a markdown section break like \n### or \n##
+      const mdBreak = /\n(?=#{1,3}\s)/.exec(candidate);
+      if (mdBreak) {
+        html = candidate.slice(0, mdBreak.index).trim();
+        const postText = candidate.slice(mdBreak.index).trim();
+        explanation = [preText, postText].filter(Boolean).join('\n\n').trim();
+      } else {
+        html = candidate.replace(/\s*(?:```+|~~~+)\s*$/, '').trim();
+        explanation = preText;
+      }
+
+      // Auto-repair missing closing tags for truncated HTML
+      if (/<style/i.test(html) && !/<\/style>/i.test(html)) {
+        html += '\n</style>';
+      }
+      if (/<script/i.test(html) && !/<\/script>/i.test(html)) {
+        html += '\n</script>';
+      }
+      if (/<body/i.test(html) && !/<\/body>/i.test(html)) {
+        html += '\n</body>';
+      }
+      if (!/<\/html>/i.test(html)) {
+        html += '\n</html>';
+      }
+    }
+  } else {
+    // Fallback: check standard code fence with ```html ... ```
+    const fenceMatch = /```(?:html|htm)?\s*([\s\S]*?)```/i.exec(trimmed);
+    if (fenceMatch) {
+      html = fenceMatch[1].trim();
+      const preText = trimmed.slice(0, fenceMatch.index).trim();
+      const postText = trimmed.slice(fenceMatch.index + fenceMatch[0].length).trim();
+      explanation = [preText, postText].filter(Boolean).join('\n\n').trim();
+    } else {
+      // Direct html tags fallback
+      const tagMatch = /<html[\s\S]*?<\/html>/i.exec(trimmed);
+      if (tagMatch) {
+        html = tagMatch[0].trim();
+        explanation = trimmed.replace(tagMatch[0], '').trim();
+      } else if (
+        trimmed.includes('<script') ||
+        trimmed.includes('<div') ||
+        trimmed.includes('<canvas') ||
+        trimmed.includes('<svg')
+      ) {
+        html = trimmed;
+        explanation = 'Interactive visualizer generated.';
+      } else {
+        html = '';
+        explanation = trimmed;
+      }
+    }
+  }
+
+  // Ensure valid DOCTYPE wrapper and head
+  if (html) {
+    if (!/<!doctype html>/i.test(html)) {
+      if (!/<html/i.test(html)) {
+        html = `<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>Interactive Visualizer</title>\n</head>\n<body>\n${html}\n</body>\n</html>`;
+      } else {
+        html = `<!DOCTYPE html>\n${html}`;
+      }
+    }
+
+    // Always inject dark theme CSS into <head> so the iframe never flashes white or renders white canvas
+    const darkThemeStyle = '<style id="dsa-dark-root">:root, html, body { background-color: #0b0f19 !important; color: #f8fafc; color-scheme: dark; }</style>';
+    if (/<head[^>]*>/i.test(html)) {
+      html = html.replace(/(<head[^>]*>)/i, `$1\n${darkThemeStyle}\n`);
+    } else if (/<html[^>]*>/i.test(html)) {
+      html = html.replace(/(<html[^>]*>)/i, `$1\n<head>\n${darkThemeStyle}\n</head>`);
+    }
+  }
+
+  // Clean explanation: remove any residual raw HTML code fences
+  explanation = explanation
+    .replace(/```(?:html|htm)?\s*<!DOCTYPE[\s\S]*?```/gi, '')
+    .replace(/```(?:html|htm)?\s*<html[\s\S]*?```/gi, '')
+    .trim();
+
+  return {
+    html: html.trim(),
+    explanation: explanation.trim() || 'Interactive visualizer generated successfully.',
+  };
+}

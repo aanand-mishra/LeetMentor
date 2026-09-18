@@ -9,11 +9,12 @@ import { useToast } from '../hooks/useToast';
 import type { Problem } from '../types';
 
 // Tab type
-type TabKey = 'overview' | 'attempts' | 'mentor' | 'notes';
+type TabKey = 'overview' | 'attempts' | 'mentor' | 'visualize' | 'notes';
 
 // Lazy or placeholder imports for later phases
 import { AttemptsTab } from '../components/problem/AttemptsTab';
 import { MentorTab } from '../components/problem/MentorTab';
+import { VisualizeTab } from '../components/problem/VisualizeTab';
 import { NotesTab } from '../components/problem/NotesTab';
 
 export const ProblemDetailPage: React.FC = () => {
@@ -22,14 +23,21 @@ export const ProblemDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const getInitialTab = (): TabKey => {
+    const hash = (location.hash || '').replace('#', '') as TabKey;
+    return ['overview', 'attempts', 'mentor', 'visualize', 'notes'].includes(hash)
+      ? hash
+      : 'overview';
+  };
+
+  const [activeTab, setActiveTab] = useState<TabKey>(getInitialTab);
   const [confidenceModalOpen, setConfidenceModalOpen] = useState(false);
   const [isNotesDirty, setIsNotesDirty] = useState(false);
 
-  // Sync active tab with URL hash (#overview, #attempts, #mentor, #notes) (FR-3.1)
+  // Sync active tab with URL hash (#overview, #attempts, #mentor, #visualize, #notes) (FR-3.1)
   useEffect(() => {
     const hash = location.hash.replace('#', '') as TabKey;
-    if (['overview', 'attempts', 'mentor', 'notes'].includes(hash)) {
+    if (['overview', 'attempts', 'mentor', 'visualize', 'notes'].includes(hash)) {
       setActiveTab(hash);
     } else {
       setActiveTab('overview');
@@ -70,6 +78,9 @@ export const ProblemDetailPage: React.FC = () => {
   const noteReviews =
     useLiveQuery(() => (id ? db.noteReviews.where('problemId').equals(id).toArray() : []), [id]) ||
     [];
+  const hasVisualization =
+    useLiveQuery(() => (id ? db.visualizations.where('problemId').equals(id).count() : 0), [id]) ||
+    0;
 
   // Sorted attempts (newest first)
   const sortedAttempts = [...attempts].sort((a, b) => b.attemptNumber - a.attemptNumber);
@@ -192,6 +203,27 @@ export const ProblemDetailPage: React.FC = () => {
           )}
         </button>
 
+        {/* Visualize Tab */}
+        <button
+          type="button"
+          onClick={() => setTab('visualize')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === 'visualize'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+          }`}
+        >
+          Visualize
+          {hasVisualization > 0 ? (
+            <span
+              className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50"
+              title="Visualizer available"
+            />
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+          )}
+        </button>
+
         {/* Notes Tab */}
         <button
           type="button"
@@ -235,6 +267,14 @@ export const ProblemDetailPage: React.FC = () => {
           <MentorTab
             problem={problem as Problem}
             mentorMessages={sortedMentor}
+            latestAttempt={sortedAttempts[0]}
+            onProblemUpdated={handleProblemUpdated}
+          />
+        )}
+
+        {activeTab === 'visualize' && (
+          <VisualizeTab
+            problem={problem as Problem}
             latestAttempt={sortedAttempts[0]}
             onProblemUpdated={handleProblemUpdated}
           />

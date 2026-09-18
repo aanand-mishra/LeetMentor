@@ -5,6 +5,7 @@ import type {
   CodeReview,
   MentorMessage,
   NoteReview,
+  ProblemVisualization,
   Settings,
   ProblemFilterParams,
   Difficulty,
@@ -17,6 +18,7 @@ class DSATrackerDB extends Dexie {
   attempts!: Table<Attempt, string>;
   mentorMessages!: Table<MentorMessage, string>;
   noteReviews!: Table<NoteReview, string>;
+  visualizations!: Table<ProblemVisualization, string>;
   settings!: Table<Settings, string>;
 
   constructor() {
@@ -28,6 +30,9 @@ class DSATrackerDB extends Dexie {
       mentorMessages: 'id, problemId, level, createdAt',
       noteReviews: 'id, problemId, createdAt',
       settings: 'key',
+    });
+    this.version(2).stores({
+      visualizations: 'id, problemId, createdAt',
     });
   }
 }
@@ -45,6 +50,7 @@ const DEFAULT_SETTINGS: Settings = {
   key: 'current',
   geminiApiKey: '',
   model: 'gemini-flash-lite-latest',
+  visualizeModel: 'gemini-3.6-flash',
   defaultLanguage: 'python',
   responseLanguage: 'English',
   theme: 'system',
@@ -141,12 +147,13 @@ export const problemsRepo = {
   async delete(id: string): Promise<void> {
     await db.transaction(
       'rw',
-      [db.problems, db.attempts, db.mentorMessages, db.noteReviews],
+      [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.visualizations],
       async () => {
         await db.problems.delete(id);
         await db.attempts.where('problemId').equals(id).delete();
         await db.mentorMessages.where('problemId').equals(id).delete();
         await db.noteReviews.where('problemId').equals(id).delete();
+        await db.visualizations.where('problemId').equals(id).delete();
       }
     );
   },
@@ -474,6 +481,37 @@ export const mentorRepo = {
 };
 
 // ==========================================
+// Visualizations Repository
+// ==========================================
+export const visualizationsRepo = {
+  async getForProblem(problemId: string): Promise<ProblemVisualization | undefined> {
+    return db.visualizations.where('problemId').equals(problemId).first();
+  },
+
+  async save(
+    data: Omit<ProblemVisualization, 'id' | 'createdAt'> & { id?: string; createdAt?: string }
+  ): Promise<ProblemVisualization> {
+    const existing = await this.getForProblem(data.problemId);
+    const now = new Date().toISOString();
+    const visualization: ProblemVisualization = {
+      id: data.id || existing?.id || generateUuid(),
+      problemId: data.problemId,
+      html: data.html,
+      explanation: data.explanation,
+      model: data.model,
+      createdAt: data.createdAt || existing?.createdAt || now,
+      updatedAt: now,
+    };
+    await db.visualizations.put(visualization);
+    return visualization;
+  },
+
+  async deleteForProblem(problemId: string): Promise<void> {
+    await db.visualizations.where('problemId').equals(problemId).delete();
+  },
+};
+
+// ==========================================
 // Note Reviews Repository
 // ==========================================
 export const noteReviewsRepo = {
@@ -568,12 +606,13 @@ export async function clearAllLocalData(): Promise<void> {
   }
   await db.transaction(
     'rw',
-    [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.settings],
+    [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.visualizations, db.settings],
     async () => {
       await db.problems.clear();
       await db.attempts.clear();
       await db.mentorMessages.clear();
       await db.noteReviews.clear();
+      await db.visualizations.clear();
       await db.settings.clear();
       await db.settings.put(DEFAULT_SETTINGS);
     }
