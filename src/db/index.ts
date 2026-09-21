@@ -5,6 +5,7 @@ import type {
   CodeReview,
   MentorMessage,
   NoteReview,
+  RevisionRecord,
   Settings,
   ProblemFilterParams,
   Difficulty,
@@ -22,6 +23,7 @@ class DSATrackerDB extends Dexie {
   attempts!: Table<Attempt, string>;
   mentorMessages!: Table<MentorMessage, string>;
   noteReviews!: Table<NoteReview, string>;
+  revisions!: Table<RevisionRecord, string>;
   settings!: Table<Settings, string>;
 
   constructor() {
@@ -40,6 +42,9 @@ class DSATrackerDB extends Dexie {
     this.version(3).stores({
       problems:
         'id, number, title, difficulty, status, confidence, dateAdded, dateSolved, updatedAt, *topics, nextReviewDate',
+    });
+    this.version(4).stores({
+      revisions: 'id, problemId, revisionNumber, completedAt',
     });
   }
 }
@@ -71,11 +76,16 @@ const DEFAULT_SETTINGS: Settings = {
 // Problems Repository
 // ==========================================
 export const problemsRepo = {
-  async create(data: Omit<Problem, 'id' | 'dateAdded' | 'updatedAt'>): Promise<Problem> {
+  async create(
+    data: Partial<Omit<Problem, 'id' | 'dateAdded' | 'updatedAt'>> & {
+      title: string;
+    }
+  ): Promise<Problem> {
     const now = new Date().toISOString();
-    let status = data.status;
+    const difficulty: Difficulty = data.difficulty || 'Medium';
+    let status: Status = data.status || 'Not Started';
     let manuallyMarkedSolved = data.manuallyMarkedSolved;
-    let dateSolved = data.dateSolved;
+    let dateSolved: string | null = data.dateSolved ?? null;
 
     // When time spent is set, auto-set status to Solved
     if (
@@ -100,7 +110,7 @@ export const problemsRepo = {
 
     if (status === 'Solved') {
       const schedule = calculateNextReview({
-        difficulty: data.difficulty,
+        difficulty,
         confidence: data.confidence || 3,
         hintsUsed: data.hintsUsed || 0,
         timeSpentMinutes: data.timeSpentMinutes ?? null,
@@ -117,7 +127,22 @@ export const problemsRepo = {
     }
 
     const problem: Problem = {
+      number: null,
+      url: '',
+      difficulty,
+      topics: [],
+      patterns: [],
+      starred: false,
+      confidence: null,
+      timeSpentMinutes: null,
+      notes: '',
+      statement: '',
+      language: 'python',
+      dateFirstAttempt: null,
+      userTimeComplexity: null,
+      userSpaceComplexity: null,
       ...data,
+      hintsUsed: data.hintsUsed || 0,
       id: generateUuid(),
       title: data.title.trim(),
       status,
@@ -266,17 +291,92 @@ export const problemsRepo = {
   },
 
   /**
+   * Archives the current problem workspace state (attempts, hints, reviews, notes, time, confidence)
+   * into a permanent RevisionRecord, and resets the active workspace to a clean slate
+   * (0 attempts, hints re-locked to avoid spoilers, time reset, status 'In Progress')
+   * for a genuine, fresh revision test.
+   */
+  async startNewRevision(id: string): Promise<{ problem: Problem; revision: RevisionRecord }> {
+    const problem = await db.problems.get(id);
+    if (!problem) {
+      throw new Error(`Problem with id ${id} not found`);
+    }
+
+    const attempts = await db.attempts.where('problemId').equals(id).toArray();
+    const mentorMessages = await db.mentorMessages.where('problemId').equals(id).toArray();
+    const noteReviews = await db.noteReviews.where('problemId').equals(id).toArray();
+    const existingRevisions = await db.revisions.where('problemId').equals(id).toArray();
+
+    const now = new Date().toISOString();
+    const revisionNumber = existingRevisions.length + 1;
+
+    const maxHintUsed = mentorMessages.reduce((max, m) => Math.max(max, m.level), 0);
+    const hintsUsed = Math.max(problem.hintsUsed || 0, maxHintUsed) as 0 | 1 | 2 | 3 | 4;
+
+    const revisionSnapshot: RevisionRecord = {
+      id: generateUuid(),
+      problemId: id,
+      revisionNumber,
+      title: `Revision #${revisionNumber}`,
+      startedAt: problem.dateFirstAttempt || problem.dateAdded,
+      completedAt: problem.dateSolved || now,
+      timeSpentMinutes: problem.timeSpentMinutes ?? null,
+      confidence: problem.confidence ?? null,
+      hintsUsed,
+      attemptsCount: attempts.length,
+      attempts: attempts.sort((a, b) => a.attemptNumber - b.attemptNumber),
+      mentorMessages: mentorMessages.sort((a, b) => a.level - b.level),
+      notes: problem.notes || '',
+      noteReviews: noteReviews.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+      statusAtSnapshot: problem.status,
+    };
+
+    await db.transaction(
+      'rw',
+      [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.revisions],
+      async () => {
+        await db.revisions.add(revisionSnapshot);
+
+        // Wipe active attempts, hints, note reviews so the workspace is clean and spoiler-free
+        await db.attempts.where('problemId').equals(id).delete();
+        await db.mentorMessages.where('problemId').equals(id).delete();
+        await db.noteReviews.where('problemId').equals(id).delete();
+
+        // Reset active problem state
+        const updated: Problem = {
+          ...problem,
+          status: 'In Progress',
+          confidence: null,
+          timeSpentMinutes: null,
+          hintsUsed: 0,
+          notes: '',
+          dateFirstAttempt: now,
+          dateSolved: null,
+          repetitionCount: (problem.repetitionCount ?? 0) + 1,
+          updatedAt: now,
+        };
+
+        await db.problems.put(updated);
+      }
+    );
+
+    const refreshed = await db.problems.get(id);
+    return { problem: refreshed!, revision: revisionSnapshot };
+  },
+
+  /**
    * Cascading delete inside a Dexie transaction (NFR-4, FR-1.5)
    */
   async delete(id: string): Promise<void> {
     await db.transaction(
       'rw',
-      [db.problems, db.attempts, db.mentorMessages, db.noteReviews],
+      [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.revisions],
       async () => {
         await db.problems.delete(id);
         await db.attempts.where('problemId').equals(id).delete();
         await db.mentorMessages.where('problemId').equals(id).delete();
         await db.noteReviews.where('problemId').equals(id).delete();
+        await db.revisions.where('problemId').equals(id).delete();
       }
     );
   },
@@ -592,7 +692,7 @@ export const mentorRepo = {
       // Update problem hintsUsed = max(hintsUsed, level)
       const problem = await db.problems.get(data.problemId);
       if (problem) {
-        const newHintsUsed = Math.max(problem.hintsUsed, data.level) as 0 | 1 | 2 | 3 | 4;
+        const newHintsUsed = Math.max(problem.hintsUsed || 0, data.level) as 0 | 1 | 2 | 3 | 4;
         const updates: Partial<Problem> = {
           hintsUsed: newHintsUsed,
           updatedAt: new Date().toISOString(),
@@ -694,6 +794,24 @@ export const settingsRepo = {
 };
 
 // ==========================================
+// Revisions Repository
+// ==========================================
+export const revisionsRepo = {
+  async listForProblem(problemId: string): Promise<RevisionRecord[]> {
+    const list = await db.revisions.where('problemId').equals(problemId).toArray();
+    return list.sort((a, b) => b.revisionNumber - a.revisionNumber); // Newest first
+  },
+
+  async getById(id: string): Promise<RevisionRecord | undefined> {
+    return db.revisions.get(id);
+  },
+
+  async delete(id: string): Promise<void> {
+    await db.revisions.delete(id);
+  },
+};
+
+// ==========================================
 // Database utilities (Clear and Danger Zone)
 // ==========================================
 export async function clearAllLocalData(): Promise<void> {
@@ -705,14 +823,16 @@ export async function clearAllLocalData(): Promise<void> {
   }
   await db.transaction(
     'rw',
-    [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.settings],
+    [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.revisions, db.settings],
     async () => {
       await db.problems.clear();
       await db.attempts.clear();
       await db.mentorMessages.clear();
       await db.noteReviews.clear();
+      await db.revisions.clear();
       await db.settings.clear();
       await db.settings.put(DEFAULT_SETTINGS);
     }
   );
 }
+

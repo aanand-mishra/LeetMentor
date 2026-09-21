@@ -36,9 +36,6 @@ export const OverviewTab: React.FC<Props> = ({
 }) => {
   const toast = useToast();
   const [statementExpanded, setStatementExpanded] = useState(false);
-  const [userTimeComplexity, setUserTimeComplexity] = useState(problem.userTimeComplexity || '');
-  const [userSpaceComplexity, setUserSpaceComplexity] = useState(problem.userSpaceComplexity || '');
-  const [isEditingComplexity, setIsEditingComplexity] = useState(false);
 
   // Editable Time Spent in Session Information
   const [isEditingTimeSpent, setIsEditingTimeSpent] = useState(false);
@@ -95,21 +92,6 @@ export const OverviewTab: React.FC<Props> = ({
     );
   };
 
-  const handleSaveComplexity = async () => {
-    try {
-      await problemsRepo.update(problem.id, {
-        userTimeComplexity: userTimeComplexity.trim() || null,
-        userSpaceComplexity: userSpaceComplexity.trim() || null,
-      });
-      setIsEditingComplexity(false);
-      onProblemUpdated();
-      toast.success('Updated complexity claims');
-    } catch (err) {
-      console.error('Failed to save complexity:', err);
-      toast.error('Failed to save complexity');
-    }
-  };
-
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—';
     try {
@@ -161,6 +143,7 @@ export const OverviewTab: React.FC<Props> = ({
           <ReviewScheduleCard
             problem={problem}
             attemptsCount={attempts.length}
+            attempts={attempts}
             onProblemUpdated={onProblemUpdated}
           />
         )}
@@ -248,79 +231,6 @@ export const OverviewTab: React.FC<Props> = ({
               )}
             </div>
           </div>
-        </div>
-
-        {/* User Complexity Claims */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Your Complexity Claims</h3>
-            {!isEditingComplexity ? (
-              <button
-                type="button"
-                onClick={() => setIsEditingComplexity(true)}
-                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
-              >
-                Edit claims
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditingComplexity(false)}
-                  className="text-xs text-slate-500 hover:text-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveComplexity}
-                  className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
-                >
-                  Save
-                </button>
-              </div>
-            )}
-          </div>
-
-          {isEditingComplexity ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Time Complexity</label>
-                <input
-                  type="text"
-                  value={userTimeComplexity}
-                  onChange={(e) => setUserTimeComplexity(e.target.value)}
-                  placeholder="e.g. O(n log n)"
-                  className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-xs outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-500 mb-1">Space Complexity</label>
-                <input
-                  type="text"
-                  value={userSpaceComplexity}
-                  onChange={(e) => setUserSpaceComplexity(e.target.value)}
-                  placeholder="e.g. O(1)"
-                  className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-xs outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 text-xs font-mono">
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="block text-[11px] text-slate-400 mb-0.5">Time:</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {problem.userTimeComplexity || 'Not specified'}
-                </span>
-              </div>
-              <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg border border-slate-200 dark:border-slate-700">
-                <span className="block text-[11px] text-slate-400 mb-0.5">Space:</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">
-                  {problem.userSpaceComplexity || 'Not specified'}
-                </span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

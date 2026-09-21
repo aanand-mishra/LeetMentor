@@ -103,6 +103,24 @@ export interface NoteReview {
   createdAt: string;
 }
 
+export interface RevisionRecord {
+  id: string; // uuid v4
+  problemId: string;
+  revisionNumber: number; // 1-indexed (e.g. Revision #1, #2, #3...)
+  title?: string;
+  startedAt: string; // ISO 8601
+  completedAt: string; // ISO 8601
+  timeSpentMinutes: number | null;
+  confidence: 1 | 2 | 3 | 4 | 5 | null;
+  hintsUsed: 0 | 1 | 2 | 3 | 4;
+  attemptsCount: number;
+  attempts: Attempt[]; // Full snapshot of all attempts with code and reviews
+  mentorMessages: MentorMessage[]; // Full snapshot of unlocked mentor hints
+  notes: string;
+  noteReviews: NoteReview[];
+  statusAtSnapshot: Status;
+}
+
 export interface Settings {
   key?: string; // Dexie key for singleton row, e.g. 'current'
   geminiApiKey: string;

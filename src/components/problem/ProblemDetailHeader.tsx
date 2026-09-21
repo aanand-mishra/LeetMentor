@@ -6,6 +6,7 @@ import {
   Edit2,
   Trash2,
   AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 import type { Problem, Status } from '../../types';
 import { DifficultyBadge } from '../common/Badges';
@@ -18,12 +19,14 @@ interface Props {
   problem: Problem;
   onProblemUpdated: () => void;
   onOpenConfidenceModal?: () => void;
+  onReviseNow?: () => void;
 }
 
 export const ProblemDetailHeader: React.FC<Props> = ({
   problem,
   onProblemUpdated,
   onOpenConfidenceModal,
+  onReviseNow,
 }) => {
   const navigate = useNavigate();
   const toast = useToast();
@@ -197,6 +200,19 @@ export const ProblemDetailHeader: React.FC<Props> = ({
                 size="md"
               />
             </div>
+
+            {/* Revise Now Button */}
+            {onReviseNow && (
+              <button
+                type="button"
+                onClick={onReviseNow}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                title="Archive current session into history and test again with a clean slate"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Revise Now</span>
+              </button>
+            )}
 
             {/* Edit & Delete Action Buttons */}
             <div className="flex items-center gap-1 pl-2 border-l border-slate-200 dark:border-slate-700">

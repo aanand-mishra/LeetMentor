@@ -9,13 +9,15 @@ import { useToast } from '../hooks/useToast';
 import type { Problem } from '../types';
 
 // Tab type
-type TabKey = 'overview' | 'attempts' | 'mentor' | 'visualize' | 'notes';
+type TabKey = 'overview' | 'attempts' | 'mentor' | 'visualize' | 'notes' | 'revisions';
 
 // Lazy or placeholder imports for later phases
 import { AttemptsTab } from '../components/problem/AttemptsTab';
 import { MentorTab } from '../components/problem/MentorTab';
 import { VisualizeTab } from '../components/problem/VisualizeTab';
 import { NotesTab } from '../components/problem/NotesTab';
+import { RevisionsTab } from '../components/problem/RevisionsTab';
+import { StartRevisionModal } from '../components/problem/StartRevisionModal';
 
 export const ProblemDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,19 +27,20 @@ export const ProblemDetailPage: React.FC = () => {
 
   const getInitialTab = (): TabKey => {
     const hash = (location.hash || '').replace('#', '') as TabKey;
-    return ['overview', 'attempts', 'mentor', 'visualize', 'notes'].includes(hash)
+    return ['overview', 'attempts', 'mentor', 'visualize', 'notes', 'revisions'].includes(hash)
       ? hash
       : 'overview';
   };
 
   const [activeTab, setActiveTab] = useState<TabKey>(getInitialTab);
   const [confidenceModalOpen, setConfidenceModalOpen] = useState(false);
+  const [isStartRevisionOpen, setIsStartRevisionOpen] = useState(false);
   const [isNotesDirty, setIsNotesDirty] = useState(false);
 
-  // Sync active tab with URL hash (#overview, #attempts, #mentor, #visualize, #notes) (FR-3.1)
+  // Sync active tab with URL hash (#overview, #attempts, #mentor, #visualize, #notes, #revisions) (FR-3.1)
   useEffect(() => {
     const hash = location.hash.replace('#', '') as TabKey;
-    if (['overview', 'attempts', 'mentor', 'visualize', 'notes'].includes(hash)) {
+    if (['overview', 'attempts', 'mentor', 'visualize', 'notes', 'revisions'].includes(hash)) {
       setActiveTab(hash);
     } else {
       setActiveTab('overview');
@@ -77,6 +80,9 @@ export const ProblemDetailPage: React.FC = () => {
     ) || [];
   const noteReviews =
     useLiveQuery(() => (id ? db.noteReviews.where('problemId').equals(id).toArray() : []), [id]) ||
+    [];
+  const revisions =
+    useLiveQuery(() => (id ? db.revisions.where('problemId').equals(id).toArray() : []), [id]) ||
     [];
 
   // Sorted attempts (newest first)
@@ -147,15 +153,16 @@ export const ProblemDetailPage: React.FC = () => {
         problem={problem as Problem}
         onProblemUpdated={handleProblemUpdated}
         onOpenConfidenceModal={() => setConfidenceModalOpen(true)}
+        onReviseNow={() => setIsStartRevisionOpen(true)}
       />
 
       {/* Tab Strip (FR-3) */}
-      <div className="border-b border-slate-200 dark:border-slate-800 flex items-center space-x-2 sm:space-x-4">
+      <div className="border-b border-slate-200 dark:border-slate-800 flex items-center space-x-2 sm:space-x-4 overflow-x-auto">
         {/* Overview Tab */}
         <button
           type="button"
           onClick={() => setTab('overview')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
             activeTab === 'overview'
               ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -168,7 +175,7 @@ export const ProblemDetailPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setTab('attempts')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
             activeTab === 'attempts'
               ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -184,7 +191,7 @@ export const ProblemDetailPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setTab('mentor')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
             activeTab === 'mentor'
               ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -204,7 +211,7 @@ export const ProblemDetailPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setTab('visualize')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
             activeTab === 'visualize'
               ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -217,7 +224,7 @@ export const ProblemDetailPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setTab('notes')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
             activeTab === 'notes'
               ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -228,6 +235,26 @@ export const ProblemDetailPage: React.FC = () => {
             <span className="px-1.5 py-0.5 text-xs font-mono font-semibold rounded bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300">
               ★ {latestNoteReview.rating}
             </span>
+          )}
+        </button>
+
+        {/* Revisions & Deep Analytics Tab */}
+        <button
+          type="button"
+          onClick={() => setTab('revisions')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
+            activeTab === 'revisions'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+          }`}
+        >
+          Revisions
+          {revisions.length > 0 ? (
+            <span className="px-1.5 py-0.5 text-xs font-mono font-semibold rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+              {revisions.length}
+            </span>
+          ) : (
+            <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
           )}
         </button>
       </div>
@@ -277,6 +304,15 @@ export const ProblemDetailPage: React.FC = () => {
             onDirtyChange={setIsNotesDirty}
           />
         )}
+
+        {activeTab === 'revisions' && (
+          <RevisionsTab
+            problem={problem as Problem}
+            revisions={revisions}
+            activeAttempts={sortedAttempts}
+            onProblemUpdated={handleProblemUpdated}
+          />
+        )}
       </div>
 
       {/* Solved Completion Modal: Time Spent (Step 1) -> Confidence (Step 2) */}
@@ -286,6 +322,18 @@ export const ProblemDetailPage: React.FC = () => {
         onSaveTimeSpent={handleSaveTimeSpent}
         onSelectConfidence={handleSelectConfidence}
         onSkip={() => setConfidenceModalOpen(false)}
+      />
+
+      {/* Start Fresh Revision Modal */}
+      <StartRevisionModal
+        isOpen={isStartRevisionOpen}
+        problem={problem as Problem}
+        attempts={sortedAttempts}
+        onClose={() => setIsStartRevisionOpen(false)}
+        onRevisionStarted={() => {
+          handleProblemUpdated();
+          setTab('attempts');
+        }}
       />
     </div>
   );

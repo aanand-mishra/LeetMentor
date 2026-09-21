@@ -13,7 +13,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import type { Problem, ReviewStage } from '../../types';
+import type { Problem, ReviewStage, Attempt } from '../../types';
 import {
   calculateNextReview,
   getProblemReviewStatus,
@@ -21,10 +21,12 @@ import {
 } from '../../utils/reviewScheduler';
 import { problemsRepo } from '../../db';
 import { useToast } from '../../hooks/useToast';
+import { StartRevisionModal } from './StartRevisionModal';
 
 interface Props {
   problem: Problem;
   attemptsCount?: number;
+  attempts?: Attempt[];
   onProblemUpdated: () => void;
 }
 
@@ -57,11 +59,13 @@ const STAGE_CONFIG: Record<
 export const ReviewScheduleCard: React.FC<Props> = ({
   problem,
   attemptsCount = 1,
+  attempts = [],
   onProblemUpdated,
 }) => {
   const toast = useToast();
   const [showFactors, setShowFactors] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStartRevisionOpen, setIsStartRevisionOpen] = useState(false);
   const [reviewConfidence, setReviewConfidence] = useState<1 | 2 | 3 | 4 | 5>(
     problem.confidence || 4
   );
@@ -155,15 +159,27 @@ export const ReviewScheduleCard: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Quick Action Button */}
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors cursor-pointer"
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Complete Revision</span>
-          </button>
+          {/* Action Buttons: Revise Now (Fresh Session) & Quick Log */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsStartRevisionOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-colors cursor-pointer"
+              title="Archive current session into history and test again with a clean slate"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Revise Now</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 shadow-sm transition-colors cursor-pointer"
+              title="Quickly log completed review without resetting code"
+            >
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Log Review</span>
+            </button>
+          </div>
         </div>
 
         {/* Status Metrics Grid */}
@@ -374,6 +390,18 @@ export const ReviewScheduleCard: React.FC<Props> = ({
           </div>
         </div>
       )}
+
+      {/* Start Fresh Revision Modal */}
+      <StartRevisionModal
+        isOpen={isStartRevisionOpen}
+        problem={problem}
+        attempts={attempts}
+        onClose={() => setIsStartRevisionOpen(false)}
+        onRevisionStarted={() => {
+          onProblemUpdated();
+        }}
+      />
     </>
   );
 };
+
