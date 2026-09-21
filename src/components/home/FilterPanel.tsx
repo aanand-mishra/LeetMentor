@@ -13,6 +13,7 @@ interface Props {
   onClearAll: () => void;
   allAvailableTopics: string[];
   allAvailablePatterns: string[];
+  dueReviewCount?: number;
 }
 
 export const FilterPanel: React.FC<Props> = ({
@@ -21,6 +22,7 @@ export const FilterPanel: React.FC<Props> = ({
   onClearAll,
   allAvailableTopics,
   allAvailablePatterns,
+  dueReviewCount = 0,
 }) => {
   const [searchInput, setSearchInput] = useState(filters.query || '');
   const [topicDropdownOpen, setTopicDropdownOpen] = useState(false);
@@ -158,6 +160,8 @@ export const FilterPanel: React.FC<Props> = ({
             <option value="dateAdded_asc">Date added (oldest)</option>
             <option value="dateSolved_desc">Date solved (newest)</option>
             <option value="dateSolved_asc">Date solved (oldest)</option>
+            <option value="reviewUrgency_desc">Review: Most Urgent / Due</option>
+            <option value="nextReview_asc">Review: Due Date (earliest)</option>
             <option value="number_asc">Number (low to high)</option>
             <option value="number_desc">Number (high to low)</option>
             <option value="title_asc">Title (A → Z)</option>
@@ -196,10 +200,21 @@ export const FilterPanel: React.FC<Props> = ({
               ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
               : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
           }`}
-          title="Problems solved with confidence <= 3, sorted by confidence asc then dateSolved asc"
+          title="Intelligent review queue (DSA-SRS): items due for revision or low confidence"
         >
           <Bookmark className="w-3.5 h-3.5" />
-          Review Queue
+          <span>Review Queue</span>
+          {dueReviewCount > 0 && (
+            <span
+              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                filters.reviewQueueOnly
+                  ? 'bg-white text-indigo-700'
+                  : 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300'
+              }`}
+            >
+              {dueReviewCount} due
+            </span>
+          )}
         </button>
 
         <button

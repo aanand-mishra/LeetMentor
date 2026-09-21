@@ -11,6 +11,7 @@ import {
 } from '../components/home/EmptyStates';
 import { useUrlFilters } from '../hooks/useUrlFilters';
 import type { Status, Difficulty } from '../types';
+import { getProblemReviewStatus } from '../utils/reviewScheduler';
 
 export const HomePage: React.FC = () => {
   const { filters, page, setFilters, clearFilters } = useUrlFilters();
@@ -88,6 +89,15 @@ export const HomePage: React.FC = () => {
     return Array.from(set).sort();
   }, [allProblems]);
 
+  // Count problems due for spaced repetition revision
+  const dueReviewCount = useMemo(() => {
+    return allProblems.filter((p) => {
+      if (p.status !== 'Solved') return false;
+      const status = getProblemReviewStatus(p);
+      return status.isDue;
+    }).length;
+  }, [allProblems]);
+
   // Handle Star toggle directly on table
   const handleToggleStar = async (
     problemId: string,
@@ -143,6 +153,7 @@ export const HomePage: React.FC = () => {
           onClearAll={clearFilters}
           allAvailableTopics={allAvailableTopics}
           allAvailablePatterns={allAvailablePatterns}
+          dueReviewCount={dueReviewCount}
         />
       )}
 

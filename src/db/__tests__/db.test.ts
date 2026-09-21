@@ -386,4 +386,121 @@ describe('Data Layer & Repositories', () => {
       expect((await settingsRepo.get()).theme).toBe('system');
     });
   });
+
+  describe('Intelligent Review Scheduling (DSA-SRS) Data Layer', () => {
+    it('automatically schedules next review date when problem is solved', async () => {
+      const problem = await problemsRepo.create({
+        number: 1,
+        title: 'Two Sum',
+        url: null,
+        statement: '',
+        difficulty: 'Easy',
+        topics: ['Array'],
+        patterns: ['Hash Table'],
+        status: 'Solved',
+        confidence: 4,
+        timeSpentMinutes: 15,
+        hintsUsed: 0,
+        starred: false,
+        userTimeComplexity: null,
+        userSpaceComplexity: null,
+        notes: '',
+        language: 'python',
+        dateFirstAttempt: null,
+        dateSolved: new Date().toISOString(),
+      });
+
+      expect(problem.nextReviewDate).toBeDefined();
+      expect(problem.reviewIntervalDays).toBeGreaterThan(10);
+      expect(problem.reviewStage).toBe('learning');
+      expect(problem.repetitionCount).toBe(0);
+    });
+
+    it('advances review stage and interval when completeReview is called', async () => {
+      const problem = await problemsRepo.create({
+        number: 15,
+        title: '3Sum',
+        url: null,
+        statement: '',
+        difficulty: 'Medium',
+        topics: ['Array'],
+        patterns: ['Two Pointers'],
+        status: 'Solved',
+        confidence: 3,
+        timeSpentMinutes: 30,
+        hintsUsed: 1,
+        starred: false,
+        userTimeComplexity: null,
+        userSpaceComplexity: null,
+        notes: 'Initial solve',
+        language: 'python',
+        dateFirstAttempt: null,
+        dateSolved: new Date().toISOString(),
+      });
+
+      const initialInterval = problem.reviewIntervalDays!;
+
+      const reviewed = await problemsRepo.completeReview(problem.id, {
+        confidence: 4,
+        timeSpentMinutes: 15,
+        notes: 'Revised with clean two-pointer approach',
+      });
+
+      expect(reviewed.repetitionCount).toBe(1);
+      expect(reviewed.reviewStage).toBe('reviewing');
+      expect(reviewed.reviewIntervalDays).toBeGreaterThan(initialInterval);
+      expect(reviewed.notes).toBe('Revised with clean two-pointer approach');
+      expect(reviewed.lastReviewedAt).toBeDefined();
+    });
+
+    it('filters review queue by due items and low confidence, sorted by urgency', async () => {
+      // Problem A: Solved with low confidence (2)
+      await problemsRepo.create({
+        number: 101,
+        title: 'Symmetric Tree',
+        url: null,
+        statement: '',
+        difficulty: 'Easy',
+        topics: ['Tree'],
+        patterns: ['DFS'],
+        status: 'Solved',
+        confidence: 2,
+        timeSpentMinutes: 20,
+        hintsUsed: 0,
+        starred: false,
+        userTimeComplexity: null,
+        userSpaceComplexity: null,
+        notes: '',
+        language: 'python',
+        dateFirstAttempt: null,
+        dateSolved: new Date().toISOString(),
+      });
+
+      // Problem B: In Progress (not solved -> not in review queue)
+      await problemsRepo.create({
+        number: 102,
+        title: 'Binary Tree Level Order',
+        url: null,
+        statement: '',
+        difficulty: 'Medium',
+        topics: ['Tree'],
+        patterns: ['BFS'],
+        status: 'In Progress',
+        confidence: null,
+        timeSpentMinutes: null,
+        hintsUsed: 0,
+        starred: false,
+        userTimeComplexity: null,
+        userSpaceComplexity: null,
+        notes: '',
+        language: 'python',
+        dateFirstAttempt: null,
+        dateSolved: null,
+      });
+
+      const reviewQueueItems = await problemsRepo.list({ reviewQueueOnly: true });
+      expect(reviewQueueItems.length).toBe(1);
+      expect(reviewQueueItems[0].title).toBe('Symmetric Tree');
+    });
+  });
 });

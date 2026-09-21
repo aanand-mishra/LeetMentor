@@ -17,6 +17,7 @@ import { format, parseISO } from 'date-fns';
 import type { Problem, Attempt, MentorMessage, NoteReview } from '../../types';
 import { problemsRepo } from '../../db';
 import { useToast } from '../../hooks/useToast';
+import { ReviewScheduleCard } from './ReviewScheduleCard';
 
 interface Props {
   problem: Problem;
@@ -155,6 +156,15 @@ export const OverviewTab: React.FC<Props> = ({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left 2 Cols: Statement & Tags */}
       <div className="lg:col-span-2 space-y-6">
+        {/* Intelligent Review Schedule (DSA-SRS) */}
+        {problem.status === 'Solved' && (
+          <ReviewScheduleCard
+            problem={problem}
+            attemptsCount={attempts.length}
+            onProblemUpdated={onProblemUpdated}
+          />
+        )}
+
         {/* Problem Statement Card */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
           <div className="flex items-center justify-between">

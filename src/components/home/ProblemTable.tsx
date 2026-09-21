@@ -5,7 +5,9 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import type { Problem } from '../../types';
 import { DifficultyBadge, StatusBadge, UnassistedBadge } from '../common/Badges';
 import { ConfidenceDots } from '../common/ConfidenceDots';
+import { getProblemReviewStatus } from '../../utils/reviewScheduler';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const formatTimeSpent = (minutes: number | null | undefined): string => {
   if (minutes === null || minutes === undefined) return '—';
   if (minutes === 0) return '0m';
@@ -148,9 +150,24 @@ export const ProblemTable: React.FC<Props> = ({
                     />
                   </td>
 
-                  {/* Confidence: dots */}
+                  {/* Confidence: dots & review status */}
                   <td className="px-3 py-3">
-                    <ConfidenceDots confidence={prob.confidence} />
+                    <div className="space-y-1">
+                      <ConfidenceDots confidence={prob.confidence} />
+                      {prob.status === 'Solved' && (() => {
+                        const rStatus = getProblemReviewStatus(prob);
+                        return (
+                          <div className="flex items-center">
+                            <span
+                              className={`px-1.5 py-0.5 text-[10px] font-semibold rounded border ${rStatus.badgeClass}`}
+                              title={`Spaced Repetition: ${rStatus.statusText} (${rStatus.stage})`}
+                            >
+                              {rStatus.statusText}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </td>
 
                   {/* Time Spent (replaces attempts) */}
@@ -228,6 +245,17 @@ export const ProblemTable: React.FC<Props> = ({
                   manuallyMarkedSolved={prob.manuallyMarkedSolved}
                 />
                 <ConfidenceDots confidence={prob.confidence} />
+                {prob.status === 'Solved' && (() => {
+                  const rStatus = getProblemReviewStatus(prob);
+                  return (
+                    <span
+                      className={`px-1.5 py-0.5 text-[10px] font-semibold rounded border ${rStatus.badgeClass}`}
+                      title={`Spaced Repetition: ${rStatus.statusText}`}
+                    >
+                      {rStatus.statusText}
+                    </span>
+                  );
+                })()}
                 {prob.timeSpentMinutes !== null && prob.timeSpentMinutes !== undefined && (
                   <span
                     className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded"

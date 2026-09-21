@@ -1,5 +1,6 @@
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type Status = 'Not Started' | 'In Progress' | 'Solved';
+export type ReviewStage = 'learning' | 'reviewing' | 'consolidated' | 'mastered';
 
 export interface Problem {
   id: string; // uuid v4
@@ -24,6 +25,13 @@ export interface Problem {
   dateSolved: string | null;
   updatedAt: string;
   manuallyMarkedSolved?: boolean; // manual override flag
+  // Intelligent Spaced Repetition (DSA-SRS) fields
+  nextReviewDate?: string | null; // ISO 8601 date string
+  reviewIntervalDays?: number | null; // current gap in days
+  repetitionCount?: number; // 0 for newly solved, 1 for 1st review, etc.
+  easeFactor?: number; // learning multiplier (default 2.2)
+  lastReviewedAt?: string | null; // ISO 8601 timestamp of last revision
+  reviewStage?: ReviewStage; // 'learning' | 'reviewing' | 'consolidated' | 'mastered'
 }
 
 export interface Attempt {
@@ -123,7 +131,47 @@ export type SortOption =
   | 'confidence_asc'
   | 'confidence_desc'
   | 'timeSpent_desc'
-  | 'timeSpent_asc';
+  | 'timeSpent_asc'
+  | 'reviewUrgency_desc'
+  | 'nextReview_asc';
+
+export interface ReviewFactorBreakdown {
+  baseDays: number;
+  confidence: number;
+  confidenceLabel: string;
+  mentorMultiplier: number;
+  hintsUsed: number;
+  difficultyMultiplier: number;
+  difficulty: Difficulty;
+  attemptMultiplier: number;
+  attemptsCount: number;
+  timeMultiplier: number;
+  timeSpentMinutes: number | null;
+  explanations: string[];
+}
+
+export interface ReviewScheduleResult {
+  nextReviewDate: string; // ISO 8601 string
+  intervalDays: number;
+  easeFactor: number;
+  repetitionCount: number;
+  stage: ReviewStage;
+  factors: ReviewFactorBreakdown;
+  summaryExplanation: string;
+}
+
+export interface ReviewScheduleParams {
+  difficulty: Difficulty;
+  confidence: 1 | 2 | 3 | 4 | 5;
+  hintsUsed: 0 | 1 | 2 | 3 | 4;
+  timeSpentMinutes: number | null;
+  attemptsCount?: number;
+  previousIntervalDays?: number | null;
+  previousEaseFactor?: number;
+  previousRepetitionCount?: number;
+  baseDate?: string | Date;
+  isReviewSession?: boolean;
+}
 
 export interface ProblemFilterParams {
   query?: string;

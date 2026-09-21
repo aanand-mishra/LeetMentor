@@ -11,6 +11,11 @@ import type {
   Status,
 } from '../types';
 import { generateUuid } from '../utils/uuid';
+import {
+  calculateNextReview,
+  isProblemInReviewQueue,
+  sortByReviewUrgency,
+} from '../utils/reviewScheduler';
 
 class DSATrackerDB extends Dexie {
   problems!: Table<Problem, string>;
@@ -31,6 +36,10 @@ class DSATrackerDB extends Dexie {
     });
     this.version(2).stores({
       visualizations: null,
+    });
+    this.version(3).stores({
+      problems:
+        'id, number, title, difficulty, status, confidence, dateAdded, dateSolved, updatedAt, *topics, nextReviewDate',
     });
   }
 }
@@ -84,6 +93,29 @@ export const problemsRepo = {
       }
     }
 
+    let nextReviewDate = data.nextReviewDate;
+    let reviewIntervalDays = data.reviewIntervalDays;
+    let reviewStage = data.reviewStage;
+    let easeFactor = data.easeFactor;
+
+    if (status === 'Solved') {
+      const schedule = calculateNextReview({
+        difficulty: data.difficulty,
+        confidence: data.confidence || 3,
+        hintsUsed: data.hintsUsed || 0,
+        timeSpentMinutes: data.timeSpentMinutes ?? null,
+        attemptsCount: 1,
+        previousIntervalDays: data.reviewIntervalDays ?? null,
+        previousEaseFactor: data.easeFactor,
+        previousRepetitionCount: data.repetitionCount ?? 0,
+        baseDate: dateSolved || now,
+      });
+      nextReviewDate = data.nextReviewDate || schedule.nextReviewDate;
+      reviewIntervalDays = data.reviewIntervalDays ?? schedule.intervalDays;
+      reviewStage = data.reviewStage || schedule.stage;
+      easeFactor = data.easeFactor ?? schedule.easeFactor;
+    }
+
     const problem: Problem = {
       ...data,
       id: generateUuid(),
@@ -91,6 +123,11 @@ export const problemsRepo = {
       status,
       manuallyMarkedSolved,
       dateSolved,
+      nextReviewDate,
+      reviewIntervalDays,
+      reviewStage,
+      easeFactor,
+      repetitionCount: data.repetitionCount ?? (status === 'Solved' ? 0 : undefined),
       dateAdded: now,
       updatedAt: now,
     };
@@ -132,6 +169,96 @@ export const problemsRepo = {
       ...updates,
       title: updates.title !== undefined ? updates.title.trim() : existing.title,
       updatedAt: new Date().toISOString(),
+    };
+
+    // Auto-calculate review schedule if solved and confidence changed or schedule missing
+    if (updated.status === 'Solved') {
+      const confidenceChanged =
+        updates.confidence !== undefined && updates.confidence !== existing.confidence;
+      const statusBecameSolved = existing.status !== 'Solved';
+      const missingSchedule = !updated.nextReviewDate;
+
+      if (
+        updates.nextReviewDate === undefined &&
+        (confidenceChanged || statusBecameSolved || missingSchedule)
+      ) {
+        const attemptsCount = await db.attempts.where('problemId').equals(id).count();
+        const schedule = calculateNextReview({
+          difficulty: updated.difficulty,
+          confidence: updated.confidence || 3,
+          hintsUsed: updated.hintsUsed || 0,
+          timeSpentMinutes: updated.timeSpentMinutes ?? null,
+          attemptsCount: Math.max(1, attemptsCount),
+          previousIntervalDays: updated.reviewIntervalDays ?? null,
+          previousEaseFactor: updated.easeFactor,
+          previousRepetitionCount: updated.repetitionCount ?? 0,
+          baseDate: updated.dateSolved || existing.dateSolved || new Date().toISOString(),
+        });
+        updated.nextReviewDate = schedule.nextReviewDate;
+        updated.reviewIntervalDays = schedule.intervalDays;
+        updated.reviewStage = schedule.stage;
+        updated.easeFactor = schedule.easeFactor;
+        if (updated.repetitionCount === undefined) {
+          updated.repetitionCount = 0;
+        }
+      }
+    } else if (updates.status && updates.status !== 'Solved') {
+      updated.nextReviewDate = null;
+      updated.reviewIntervalDays = null;
+      updated.reviewStage = undefined;
+    }
+
+    await db.problems.put(updated);
+    return updated;
+  },
+
+  /**
+   * Records a completed revision session for spaced repetition (DSA-SRS).
+   */
+  async completeReview(
+    id: string,
+    data: {
+      confidence: 1 | 2 | 3 | 4 | 5;
+      timeSpentMinutes?: number;
+      notes?: string;
+    }
+  ): Promise<Problem> {
+    const existing = await db.problems.get(id);
+    if (!existing) {
+      throw new Error(`Problem with id ${id} not found`);
+    }
+
+    const attemptsCount = await db.attempts.where('problemId').equals(id).count();
+    const now = new Date().toISOString();
+
+    const schedule = calculateNextReview({
+      difficulty: existing.difficulty,
+      confidence: data.confidence,
+      hintsUsed: existing.hintsUsed || 0,
+      timeSpentMinutes: data.timeSpentMinutes ?? existing.timeSpentMinutes,
+      attemptsCount: Math.max(1, attemptsCount),
+      previousIntervalDays: existing.reviewIntervalDays ?? null,
+      previousEaseFactor: existing.easeFactor,
+      previousRepetitionCount: existing.repetitionCount ?? 0,
+      isReviewSession: true,
+      baseDate: now,
+    });
+
+    const updated: Problem = {
+      ...existing,
+      confidence: data.confidence,
+      lastReviewedAt: now,
+      nextReviewDate: schedule.nextReviewDate,
+      reviewIntervalDays: schedule.intervalDays,
+      repetitionCount: schedule.repetitionCount,
+      easeFactor: schedule.easeFactor,
+      reviewStage: schedule.stage,
+      timeSpentMinutes:
+        data.timeSpentMinutes !== undefined
+          ? (existing.timeSpentMinutes ?? 0) + data.timeSpentMinutes
+          : existing.timeSpentMinutes,
+      notes: data.notes !== undefined ? data.notes : existing.notes,
+      updatedAt: now,
     };
 
     await db.problems.put(updated);
@@ -246,11 +373,9 @@ export const problemsRepo = {
       items = items.filter((p) => p.starred);
     }
 
-    // Review queue (FR-2.4: status === 'Solved' && confidence !== null && confidence <= 3)
+    // Review queue: intelligent spaced repetition (due/overdue OR low confidence <= 3)
     if (params.reviewQueueOnly) {
-      items = items.filter(
-        (p) => p.status === 'Solved' && p.confidence !== null && p.confidence <= 3
-      );
+      items = items.filter((p) => isProblemInReviewQueue(p));
     }
 
     // Has unresolved review (latest attempt verdict is 'revise')
@@ -273,70 +398,79 @@ export const problemsRepo = {
       items = items.filter((p) => problemIdsWithUnresolved.has(p.id));
     }
 
-    // 3. Sorting (FR-2.4 review queue default sort: confidence asc, then dateSolved asc)
+    // 3. Sorting (Default review queue sort: reviewUrgency_desc, else dateAdded_desc)
     const sort =
-      params.reviewQueueOnly && !params.sort ? 'confidence_asc' : params.sort || 'dateAdded_desc';
+      params.reviewQueueOnly && !params.sort ? 'reviewUrgency_desc' : params.sort || 'dateAdded_desc';
 
-    items.sort((a, b) => {
-      switch (sort) {
-        case 'dateAdded_desc':
-          return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
-        case 'dateAdded_asc':
-          return new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime();
-        case 'dateSolved_desc': {
-          const tA = a.dateSolved ? new Date(a.dateSolved).getTime() : 0;
-          const tB = b.dateSolved ? new Date(b.dateSolved).getTime() : 0;
-          return tB - tA;
+    if (sort === 'reviewUrgency_desc') {
+      items = sortByReviewUrgency(items);
+    } else {
+      items.sort((a, b) => {
+        switch (sort) {
+          case 'nextReview_asc': {
+            const rA = a.nextReviewDate ? new Date(a.nextReviewDate).getTime() : Infinity;
+            const rB = b.nextReviewDate ? new Date(b.nextReviewDate).getTime() : Infinity;
+            return rA - rB;
+          }
+          case 'dateAdded_desc':
+            return new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime();
+          case 'dateAdded_asc':
+            return new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime();
+          case 'dateSolved_desc': {
+            const tA = a.dateSolved ? new Date(a.dateSolved).getTime() : 0;
+            const tB = b.dateSolved ? new Date(b.dateSolved).getTime() : 0;
+            return tB - tA;
+          }
+          case 'dateSolved_asc': {
+            const tA = a.dateSolved ? new Date(a.dateSolved).getTime() : Infinity;
+            const tB = b.dateSolved ? new Date(b.dateSolved).getTime() : Infinity;
+            return tA - tB;
+          }
+          case 'number_asc': {
+            const nA = a.number ?? Infinity;
+            const nB = b.number ?? Infinity;
+            return nA - nB;
+          }
+          case 'number_desc': {
+            const nA = a.number ?? -1;
+            const nB = b.number ?? -1;
+            return nB - nA;
+          }
+          case 'title_asc':
+            return a.title.localeCompare(b.title);
+          case 'title_desc':
+            return b.title.localeCompare(a.title);
+          case 'difficulty_asc': {
+            const order: Record<Difficulty, number> = { Easy: 1, Medium: 2, Hard: 3 };
+            return order[a.difficulty] - order[b.difficulty];
+          }
+          case 'difficulty_desc': {
+            const order: Record<Difficulty, number> = { Easy: 1, Medium: 2, Hard: 3 };
+            return order[b.difficulty] - order[a.difficulty];
+          }
+          case 'confidence_asc': {
+            const cA = a.confidence ?? Infinity;
+            const cB = b.confidence ?? Infinity;
+            if (cA !== cB) return cA - cB;
+            // Tie breaker for review queue: dateSolved ascending
+            const tA = a.dateSolved ? new Date(a.dateSolved).getTime() : Infinity;
+            const tB = b.dateSolved ? new Date(b.dateSolved).getTime() : Infinity;
+            return tA - tB;
+          }
+          case 'confidence_desc': {
+            const cA = a.confidence ?? -1;
+            const cB = b.confidence ?? -1;
+            return cB - cA;
+          }
+          case 'timeSpent_desc':
+            return (b.timeSpentMinutes ?? -1) - (a.timeSpentMinutes ?? -1);
+          case 'timeSpent_asc':
+            return (a.timeSpentMinutes ?? Infinity) - (b.timeSpentMinutes ?? Infinity);
+          default:
+            return 0;
         }
-        case 'dateSolved_asc': {
-          const tA = a.dateSolved ? new Date(a.dateSolved).getTime() : Infinity;
-          const tB = b.dateSolved ? new Date(b.dateSolved).getTime() : Infinity;
-          return tA - tB;
-        }
-        case 'number_asc': {
-          const nA = a.number ?? Infinity;
-          const nB = b.number ?? Infinity;
-          return nA - nB;
-        }
-        case 'number_desc': {
-          const nA = a.number ?? -1;
-          const nB = b.number ?? -1;
-          return nB - nA;
-        }
-        case 'title_asc':
-          return a.title.localeCompare(b.title);
-        case 'title_desc':
-          return b.title.localeCompare(a.title);
-        case 'difficulty_asc': {
-          const order: Record<Difficulty, number> = { Easy: 1, Medium: 2, Hard: 3 };
-          return order[a.difficulty] - order[b.difficulty];
-        }
-        case 'difficulty_desc': {
-          const order: Record<Difficulty, number> = { Easy: 1, Medium: 2, Hard: 3 };
-          return order[b.difficulty] - order[a.difficulty];
-        }
-        case 'confidence_asc': {
-          const cA = a.confidence ?? Infinity;
-          const cB = b.confidence ?? Infinity;
-          if (cA !== cB) return cA - cB;
-          // Tie breaker for review queue: dateSolved ascending
-          const tA = a.dateSolved ? new Date(a.dateSolved).getTime() : Infinity;
-          const tB = b.dateSolved ? new Date(b.dateSolved).getTime() : Infinity;
-          return tA - tB;
-        }
-        case 'confidence_desc': {
-          const cA = a.confidence ?? -1;
-          const cB = b.confidence ?? -1;
-          return cB - cA;
-        }
-        case 'timeSpent_desc':
-          return (b.timeSpentMinutes ?? -1) - (a.timeSpentMinutes ?? -1);
-        case 'timeSpent_asc':
-          return (a.timeSpentMinutes ?? Infinity) - (b.timeSpentMinutes ?? Infinity);
-        default:
-          return 0;
-      }
-    });
+      });
+    }
 
     return items;
   },
