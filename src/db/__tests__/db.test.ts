@@ -300,8 +300,16 @@ describe('Data Layer & Repositories', () => {
         verdict: 'revise',
         summary: 'Revise code',
         correctness: { status: 'incorrect', failingCases: ['edge case'] },
-        complexity: { time: 'O(n^2)', space: 'O(1)', optimalTime: 'O(n)', optimalSpace: 'O(n)', isOptimal: false },
-        issues: [{ severity: 'major', title: 'Slow', detail: 'Nested loop', suggestion: 'Use map' }],
+        complexity: {
+          time: 'O(n^2)',
+          space: 'O(1)',
+          optimalTime: 'O(n)',
+          optimalSpace: 'O(n)',
+          isOptimal: false,
+        },
+        issues: [
+          { severity: 'major', title: 'Slow', detail: 'Nested loop', suggestion: 'Use map' },
+        ],
         positives: ['Good try'],
         nextStep: 'Fix nested loop',
         model: 'test-model',

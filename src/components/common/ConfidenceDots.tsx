@@ -66,7 +66,9 @@ export const ConfidenceDots: React.FC<Props> = ({
   return (
     <div
       className="inline-flex items-center gap-1 shrink-0"
-      title={confidence ? `Confidence: ${confidence}/5 — ${CONFIDENCE_LABELS[confidence]}` : 'Unrated'}
+      title={
+        confidence ? `Confidence: ${confidence}/5 — ${CONFIDENCE_LABELS[confidence]}` : 'Unrated'
+      }
       aria-label={confidence ? `Confidence: ${confidence} of 5` : 'Unrated'}
     >
       {[1, 2, 3, 4, 5].map((level) => {

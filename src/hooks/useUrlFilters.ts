@@ -1,11 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { useMemo, useCallback } from 'react';
-import type {
-  ProblemFilterParams,
-  Difficulty,
-  Status,
-  SortOption,
-} from '../types';
+import type { ProblemFilterParams, Difficulty, Status, SortOption } from '../types';
 
 export function useUrlFilters() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,9 +15,7 @@ export function useUrlFilters() {
       : undefined;
 
     const statusParam = searchParams.get('status');
-    const status = statusParam
-      ? (statusParam.split(',').filter(Boolean) as Status[])
-      : undefined;
+    const status = statusParam ? (statusParam.split(',').filter(Boolean) as Status[]) : undefined;
 
     const topicsParam = searchParams.get('topics');
     const topics = topicsParam ? topicsParam.split(',').filter(Boolean) : undefined;

@@ -5,10 +5,7 @@ import { SummaryBar } from '../components/home/SummaryBar';
 import { FilterPanel } from '../components/home/FilterPanel';
 import { ProblemTable } from '../components/home/ProblemTable';
 import { WelcomeGuideBanner } from '../components/home/WelcomeGuideBanner';
-import {
-  ZeroProblemsEmptyState,
-  NoFilterMatchesEmptyState,
-} from '../components/home/EmptyStates';
+import { ZeroProblemsEmptyState, NoFilterMatchesEmptyState } from '../components/home/EmptyStates';
 import { useUrlFilters } from '../hooks/useUrlFilters';
 import type { Status, Difficulty } from '../types';
 import { getProblemReviewStatus } from '../utils/reviewScheduler';
@@ -118,9 +115,7 @@ export const HomePage: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Welcome & Quick Start Guide Banner */}
-      {showWelcomeBanner && (
-        <WelcomeGuideBanner onDismiss={handleDismissBanner} />
-      )}
+      {showWelcomeBanner && <WelcomeGuideBanner onDismiss={handleDismissBanner} />}
 
       {/* Summary Bar */}
       {hasAnyProblems && (
@@ -130,9 +125,7 @@ export const HomePage: React.FC = () => {
           activeDifficultyFilter={filters.difficulty}
           onSelectStatus={(st: Status) => {
             const current = filters.status || [];
-            const next = current.includes(st)
-              ? current.filter((s) => s !== st)
-              : [...current, st];
+            const next = current.includes(st) ? current.filter((s) => s !== st) : [...current, st];
             setFilters({ status: next });
           }}
           onSelectDifficulty={(diff: Difficulty) => {

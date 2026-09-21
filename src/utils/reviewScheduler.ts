@@ -71,7 +71,10 @@ export function getAttemptMultiplier(attemptsCount: number): {
     return { multiplier: 1.0, explanation: 'Normal attempt count (neutral)' };
   }
   if (attemptsCount <= 5) {
-    return { multiplier: 0.85, explanation: `${attemptsCount} attempts (-15% struggle adjustment)` };
+    return {
+      multiplier: 0.85,
+      explanation: `${attemptsCount} attempts (-15% struggle adjustment)`,
+    };
   }
   return { multiplier: 0.75, explanation: `${attemptsCount} attempts (-25% struggle adjustment)` };
 }
@@ -163,7 +166,9 @@ export function calculateNextReview(params: ReviewScheduleParams): ReviewSchedul
   let stage: ReviewStage;
 
   const effectiveBaseDate = typeof baseDate === 'string' ? parseISO(baseDate) : baseDate;
-  const isReview = Boolean(isReviewSession || (previousRepetitionCount && previousRepetitionCount > 0));
+  const isReview = Boolean(
+    isReviewSession || (previousRepetitionCount && previousRepetitionCount > 0)
+  );
 
   // Branch A: Initial Solve (Repetition 0)
   if (!isReview) {
@@ -171,11 +176,7 @@ export function calculateNextReview(params: ReviewScheduleParams): ReviewSchedul
       intervalDays = MIN_INITIAL_DAYS; // Lost (1/5) is always 2 days: urgent check before schema dissolves
     } else {
       const rawDays =
-        baseDays *
-        mentorMultiplier *
-        difficultyMultiplier *
-        attemptMultiplier *
-        timeMultiplier;
+        baseDays * mentorMultiplier * difficultyMultiplier * attemptMultiplier * timeMultiplier;
 
       intervalDays = Math.max(MIN_INITIAL_DAYS, Math.min(MAX_INITIAL_DAYS, Math.round(rawDays)));
     }
@@ -187,10 +188,14 @@ export function calculateNextReview(params: ReviewScheduleParams): ReviewSchedul
     if (confidence >= 3) {
       // Successful recall: interval expands
       const deltaEF = 0.1 - (5 - confidence) * (0.08 + (5 - confidence) * 0.02);
-      easeFactor = Math.max(MIN_EASE_FACTOR, Math.min(MAX_EASE_FACTOR, previousEaseFactor + deltaEF));
+      easeFactor = Math.max(
+        MIN_EASE_FACTOR,
+        Math.min(MAX_EASE_FACTOR, previousEaseFactor + deltaEF)
+      );
 
       const confMultiplier = confidence === 5 ? 1.25 : confidence === 4 ? 1.0 : 0.85;
-      const prevInterval = previousIntervalDays && previousIntervalDays > 0 ? previousIntervalDays : baseDays;
+      const prevInterval =
+        previousIntervalDays && previousIntervalDays > 0 ? previousIntervalDays : baseDays;
 
       // When reviewing, mentor usage and difficulty continue to modulate interval expansion
       const rawDays =
@@ -200,10 +205,7 @@ export function calculateNextReview(params: ReviewScheduleParams): ReviewSchedul
         (hintsUsed === 0 ? 1.05 : mentorMultiplier) *
         (difficulty === 'Hard' ? 0.9 : 1.0);
 
-      intervalDays = Math.max(
-        MIN_INITIAL_DAYS + 1,
-        Math.min(MAX_REVIEW_DAYS, Math.round(rawDays))
-      );
+      intervalDays = Math.max(MIN_INITIAL_DAYS + 1, Math.min(MAX_REVIEW_DAYS, Math.round(rawDays)));
 
       repetitionCount = (previousRepetitionCount || 0) + 1;
 
@@ -411,7 +413,10 @@ export function isProblemInReviewQueue(problem: Problem, currentDate: Date = new
 /**
  * Sorts problems by review urgency descending (most urgent / overdue first).
  */
-export function sortByReviewUrgency(problems: Problem[], currentDate: Date = new Date()): Problem[] {
+export function sortByReviewUrgency(
+  problems: Problem[],
+  currentDate: Date = new Date()
+): Problem[] {
   const statusMap = new Map<string, ProblemReviewStatus>();
   for (const p of problems) {
     statusMap.set(p.id, getProblemReviewStatus(p, 1, currentDate));

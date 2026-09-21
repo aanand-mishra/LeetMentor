@@ -8,7 +8,10 @@
  * 3. Bare LaTeX formulas (e.g. `\mathcal{O}(n)`) into `$\mathcal{O}(n)$`.
  * 4. Normalizes complexity bullets.
  */
-export function formatMentorMarkdown(rawContent: string, defaultLanguage: string = 'python'): string {
+export function formatMentorMarkdown(
+  rawContent: string,
+  defaultLanguage: string = 'python'
+): string {
   if (!rawContent || !rawContent.trim()) return '';
 
   let text = rawContent.trim();
@@ -94,9 +97,13 @@ export function formatMentorMarkdown(rawContent: string, defaultLanguage: string
       } else if (/^(Algorithmic Blueprint|Pseudocode):?$/i.test(trimmed)) {
         processedLines.push('\n## Algorithmic Blueprint\n');
       } else if (/^Time Complexity:\s*(.*)$/i.test(trimmed)) {
-        processedLines.push('- **Time Complexity:** ' + trimmed.replace(/^Time Complexity:\s*/i, ''));
+        processedLines.push(
+          '- **Time Complexity:** ' + trimmed.replace(/^Time Complexity:\s*/i, '')
+        );
       } else if (/^Space Complexity:\s*(.*)$/i.test(trimmed)) {
-        processedLines.push('- **Space Complexity:** ' + trimmed.replace(/^Space Complexity:\s*/i, ''));
+        processedLines.push(
+          '- **Space Complexity:** ' + trimmed.replace(/^Space Complexity:\s*/i, '')
+        );
       } else {
         processedLines.push(line);
       }

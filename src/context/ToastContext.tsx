@@ -70,9 +70,15 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }`}
           >
             <div className="shrink-0 mt-0.5">
-              {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-              {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
-              {toast.type === 'info' && <Info className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+              {toast.type === 'success' && (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              )}
+              {toast.type === 'error' && (
+                <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+              )}
+              {toast.type === 'info' && (
+                <Info className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              )}
             </div>
             <div className="flex-1 text-sm font-medium leading-relaxed">{toast.message}</div>
             <button

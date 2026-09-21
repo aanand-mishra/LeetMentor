@@ -36,18 +36,18 @@ describe('FR-6 — Notes and Notes Review Acceptance Criteria', () => {
   it('scaffold guidance is rendered strictly as placeholder text, never pre-filled content (FR-6.2)', () => {
     render(
       <ToastProvider>
-        <NotesTab
-          problem={sampleProblem}
-          noteReviews={[]}
-          onProblemUpdated={vi.fn()}
-        />
+        <NotesTab problem={sampleProblem} noteReviews={[]} onProblemUpdated={vi.fn()} />
       </ToastProvider>
     );
 
-    const textarea = screen.getByPlaceholderText(/What was the key insight\?/i) as HTMLTextAreaElement;
+    const textarea = screen.getByPlaceholderText(
+      /What was the key insight\?/i
+    ) as HTMLTextAreaElement;
     expect(textarea).toBeInTheDocument();
     expect(textarea.value).toBe('');
-    expect(textarea.placeholder).toContain('What pattern does this belong to, and what else does that pattern solve?');
+    expect(textarea.placeholder).toContain(
+      'What pattern does this belong to, and what else does that pattern solve?'
+    );
     expect(textarea.placeholder).toContain('Why is this complexity optimal?');
     expect(textarea.placeholder).toContain('What did I get wrong first, and why?');
   });
@@ -57,11 +57,7 @@ describe('FR-6 — Notes and Notes Review Acceptance Criteria', () => {
 
     render(
       <ToastProvider>
-        <NotesTab
-          problem={sampleProblem}
-          noteReviews={[]}
-          onProblemUpdated={vi.fn()}
-        />
+        <NotesTab problem={sampleProblem} noteReviews={[]} onProblemUpdated={vi.fn()} />
       </ToastProvider>
     );
 
@@ -81,16 +77,15 @@ describe('FR-6 — Notes and Notes Review Acceptance Criteria', () => {
 
     render(
       <ToastProvider>
-        <NotesTab
-          problem={sampleProblem}
-          noteReviews={[]}
-          onProblemUpdated={onProblemUpdated}
-        />
+        <NotesTab problem={sampleProblem} noteReviews={[]} onProblemUpdated={onProblemUpdated} />
       </ToastProvider>
     );
 
     const textarea = screen.getByPlaceholderText(/What was the key insight\?/i);
-    await user.type(textarea, 'Key insight: Using a hash map achieves O(N) time by trading O(N) auxiliary space.');
+    await user.type(
+      textarea,
+      'Key insight: Using a hash map achieves O(N) time by trading O(N) auxiliary space.'
+    );
 
     // Wait for 1s debounce to complete and save to IndexedDB
     await waitFor(

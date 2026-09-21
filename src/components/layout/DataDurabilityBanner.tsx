@@ -25,7 +25,10 @@ export const DataDurabilityBanner: React.FC = () => {
     }
 
     // Check problems count and days since last export
-    const count = await problemsRepo.getAll().then((p) => p.length).catch(() => 0);
+    const count = await problemsRepo
+      .getAll()
+      .then((p) => p.length)
+      .catch(() => 0);
     if (count === 0) return;
 
     const lastExportStr = localStorage.getItem('dsa_last_export_timestamp');
@@ -68,11 +71,14 @@ export const DataDurabilityBanner: React.FC = () => {
           <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
           {bannerType === 'first_run' ? (
             <span>
-              <strong>Local-First Notice:</strong> Your data is stored directly in this browser's IndexedDB. Clearing browser cache or site data will erase your problems. Export backups periodically to prevent data loss.
+              <strong>Local-First Notice:</strong> Your data is stored directly in this browser's
+              IndexedDB. Clearing browser cache or site data will erase your problems. Export
+              backups periodically to prevent data loss.
             </span>
           ) : (
             <span>
-              <strong>Backup Reminder:</strong> You haven't taken a data backup in over 14 days. Protect your solutions, attempts, and notes by exporting a JSON backup.
+              <strong>Backup Reminder:</strong> You haven't taken a data backup in over 14 days.
+              Protect your solutions, attempts, and notes by exporting a JSON backup.
             </span>
           )}
         </div>

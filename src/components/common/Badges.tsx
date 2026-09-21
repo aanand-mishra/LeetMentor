@@ -7,7 +7,8 @@ export const DifficultyBadge: React.FC<{ difficulty: Difficulty; size?: 'sm' | '
 }) => {
   const styles: Record<Difficulty, string> = {
     Easy: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
-    Medium: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+    Medium:
+      'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
     Hard: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800',
   };
 
@@ -41,11 +42,18 @@ export const StatusBadge: React.FC<{
   return (
     <span
       className={`inline-flex items-center font-medium rounded border ${styles[status]} ${textSizes}`}
-      title={manuallyMarkedSolved ? 'Manually marked as solved without passing AI review' : undefined}
+      title={
+        manuallyMarkedSolved ? 'Manually marked as solved without passing AI review' : undefined
+      }
     >
       {status}
       {status === 'Solved' && manuallyMarkedSolved && (
-        <span className="ml-1 text-xs font-bold text-amber-600 dark:text-amber-400" title="Manually marked solved">*</span>
+        <span
+          className="ml-1 text-xs font-bold text-amber-600 dark:text-amber-400"
+          title="Manually marked solved"
+        >
+          *
+        </span>
       )}
     </span>
   );

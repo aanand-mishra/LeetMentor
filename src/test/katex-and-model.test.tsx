@@ -15,7 +15,8 @@ describe('Site-wide KaTeX rendering and Model configuration', () => {
       number: 1,
       title: 'Two Sum',
       url: null,
-      statement: 'Given an array $nums$ of size $N$, find indices adding to $target$. Constraint: $1 \\le N \\le 10^4$.',
+      statement:
+        'Given an array $nums$ of size $N$, find indices adding to $target$. Constraint: $1 \\le N \\le 10^4$.',
       difficulty: 'Easy',
       topics: ['Array', 'Hash Table'],
       patterns: ['Hash Map'],
@@ -46,7 +47,9 @@ describe('Site-wide KaTeX rendering and Model configuration', () => {
 
     it('renders mathcal notation and text operators', () => {
       const { container } = render(
-        <MarkdownRenderer content={'Complexity is $\\mathcal{O}(N)$ and complement is $\\text{target} - x$.'} />
+        <MarkdownRenderer
+          content={'Complexity is $\\mathcal{O}(N)$ and complement is $\\text{target} - x$.'}
+        />
       );
 
       const katexElements = container.querySelectorAll('.katex');
@@ -67,7 +70,9 @@ describe('Site-wide KaTeX rendering and Model configuration', () => {
     it('MathText renders inline math without block paragraph wrapper', () => {
       const { container } = render(
         <div>
-          <span>Time: <MathText content="$O(1)$" /></span>
+          <span>
+            Time: <MathText content="$O(1)$" />
+          </span>
         </div>
       );
 

@@ -36,22 +36,26 @@ const STAGE_CONFIG: Record<
 > = {
   learning: {
     label: 'Stage 1: Learning',
-    color: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+    color:
+      'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
     icon: Brain,
   },
   reviewing: {
     label: 'Stage 2: Reviewing',
-    color: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
+    color:
+      'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
     icon: RotateCcw,
   },
   consolidated: {
     label: 'Stage 3: Consolidated',
-    color: 'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800',
+    color:
+      'bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800',
     icon: Sparkles,
   },
   mastered: {
     label: 'Stage 4: Mastered',
-    color: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+    color:
+      'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
     icon: Trophy,
   },
 };
@@ -106,14 +110,17 @@ export const ReviewScheduleCard: React.FC<Props> = ({
     e.preventDefault();
     setSubmitting(true);
     try {
-      const parsedTime = reviewTimeMinutes.trim() ? parseInt(reviewTimeMinutes.trim(), 10) : undefined;
+      const parsedTime = reviewTimeMinutes.trim()
+        ? parseInt(reviewTimeMinutes.trim(), 10)
+        : undefined;
       const additionalNotes = reviewNotes.trim()
         ? `${problem.notes ? `${problem.notes}\n\n` : ''}**[Revision ${format(new Date(), 'yyyy-MM-dd')} - ${reviewConfidence}/5 confidence]**\n${reviewNotes.trim()}`
         : undefined;
 
       await problemsRepo.completeReview(problem.id, {
         confidence: reviewConfidence,
-        timeSpentMinutes: parsedTime && !isNaN(parsedTime) && parsedTime > 0 ? parsedTime : undefined,
+        timeSpentMinutes:
+          parsedTime && !isNaN(parsedTime) && parsedTime > 0 ? parsedTime : undefined,
         notes: additionalNotes,
       });
 
@@ -154,7 +161,8 @@ export const ReviewScheduleCard: React.FC<Props> = ({
                 </span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                DSA-Adaptive Spaced Repetition (DSA-SRS) algorithm tailored for high cognitive retention
+                DSA-Adaptive Spaced Repetition (DSA-SRS) algorithm tailored for high cognitive
+                retention
               </p>
             </div>
           </div>
@@ -280,7 +288,9 @@ export const ReviewScheduleCard: React.FC<Props> = ({
                 ))}
               </ul>
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-[11px]">
-                💡 <strong>Philosophy:</strong> Revisions are scheduled with a minimum gap of 2 days to ensure true conceptual retrieval rather than surface syntax regurgitation, while allowing you to comfortably learn new problems.
+                💡 <strong>Philosophy:</strong> Revisions are scheduled with a minimum gap of 2 days
+                to ensure true conceptual retrieval rather than surface syntax regurgitation, while
+                allowing you to comfortably learn new problems.
               </div>
             </div>
           )}
@@ -404,4 +414,3 @@ export const ReviewScheduleCard: React.FC<Props> = ({
     </>
   );
 };
-

@@ -194,11 +194,15 @@ describe('FR-8 — Settings & Data Management Acceptance Tests', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Your API key is stored unencrypted in this browser's IndexedDB and is sent directly from your browser to Google\./i)
+        screen.getByText(
+          /Your API key is stored unencrypted in this browser's IndexedDB and is sent directly from your browser to Google\./i
+        )
       ).toBeInTheDocument();
 
       expect(
-        screen.getByText(/Free-tier Gemini requests may be used by Google to improve their models\. Do not paste confidential or employer-owned code\./i)
+        screen.getByText(
+          /Free-tier Gemini requests may be used by Google to improve their models\. Do not paste confidential or employer-owned code\./i
+        )
       ).toBeInTheDocument();
     });
   });

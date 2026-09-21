@@ -17,9 +17,7 @@ export function useKeyboardShortcuts(options: ShortcutOptions = {}) {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const isInputFocused =
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable;
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
 
       // Esc always works, even in input (NFR-9)
       if (e.key === 'Escape') {

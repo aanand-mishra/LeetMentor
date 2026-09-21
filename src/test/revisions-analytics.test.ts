@@ -74,7 +74,10 @@ describe('Revisions & Intelligent Record Keeping', () => {
     const activeAttemptsAfter = await db.attempts.where('problemId').equals(problem.id).toArray();
     expect(activeAttemptsAfter).toHaveLength(0);
 
-    const activeHintsAfter = await db.mentorMessages.where('problemId').equals(problem.id).toArray();
+    const activeHintsAfter = await db.mentorMessages
+      .where('problemId')
+      .equals(problem.id)
+      .toArray();
     expect(activeHintsAfter).toHaveLength(0);
 
     // Verify revisionsRepo can retrieve the archived revision

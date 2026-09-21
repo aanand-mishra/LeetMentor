@@ -51,19 +51,19 @@ export const ProblemTable: React.FC<Props> = ({
   return (
     <div className="space-y-4">
       {/* Desktop Table (>=1024px) */}
-      <div className="hidden lg:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+      <div className="hidden lg:block bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
         <table className="w-full text-left text-sm border-collapse">
           <thead>
-            <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              <th className="w-10 px-3 py-3 text-center">★</th>
-              <th className="w-16 px-3 py-3">#</th>
-              <th className="px-4 py-3">Title</th>
-              <th className="w-24 px-3 py-3">Difficulty</th>
-              <th className="px-3 py-3">Topics</th>
-              <th className="w-28 px-3 py-3">Status</th>
-              <th className="w-36 px-3 py-3">Confidence</th>
-              <th className="w-28 px-3 py-3 text-center">Time Spent</th>
-              <th className="w-32 px-3 py-3 text-right">Last Activity</th>
+            <tr className="border-b border-slate-200/90 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none">
+              <th className="w-10 px-3 py-3.5 text-center">★</th>
+              <th className="w-16 px-3 py-3.5 font-mono">#</th>
+              <th className="px-4 py-3.5">Title</th>
+              <th className="w-24 px-3 py-3.5">Difficulty</th>
+              <th className="px-3 py-3.5">Topics</th>
+              <th className="w-28 px-3 py-3.5">Status</th>
+              <th className="w-36 px-3 py-3.5">Confidence</th>
+              <th className="w-28 px-3 py-3.5 text-center">Time Spent</th>
+              <th className="w-32 px-4 py-3.5 text-right">Last Activity</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -74,20 +74,20 @@ export const ProblemTable: React.FC<Props> = ({
                 <tr
                   key={prob.id}
                   onClick={() => navigate(`/problem/${prob.id}`)}
-                  className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 cursor-pointer transition-colors group"
+                  className="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 cursor-pointer transition-colors group"
                 >
                   {/* Star Toggle */}
                   <td
-                    className="px-3 py-3 text-center"
+                    className="px-3 py-3.5 text-center"
                     onClick={(e) => onToggleStar(prob.id, prob.starred, e)}
                   >
                     <button
                       type="button"
                       aria-label={prob.starred ? 'Unstar problem' : 'Star problem'}
-                      className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      className="p-1 rounded-md hover:bg-slate-200/70 dark:hover:bg-slate-700/70 transition-colors cursor-pointer"
                     >
                       <Star
-                        className={`w-4 h-4 ${
+                        className={`w-4 h-4 transition-transform group-hover:scale-105 ${
                           prob.starred
                             ? 'text-amber-500 fill-amber-500'
                             : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'
@@ -97,17 +97,17 @@ export const ProblemTable: React.FC<Props> = ({
                   </td>
 
                   {/* Problem Number */}
-                  <td className="px-3 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">
+                  <td className="px-3 py-3.5 font-mono text-xs font-semibold text-slate-500 dark:text-slate-400">
                     {prob.number ?? '—'}
                   </td>
 
                   {/* Title */}
-                  <td className="px-4 py-3 font-medium text-slate-900 dark:text-white">
+                  <td className="px-4 py-3.5 font-semibold text-slate-900 dark:text-white">
                     <div className="flex items-center gap-2">
                       <Link
                         to={`/problem/${prob.id}`}
                         onClick={(e) => e.stopPropagation()}
-                        className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline"
+                        className="hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline transition-colors"
                       >
                         {prob.title}
                       </Link>
@@ -116,24 +116,24 @@ export const ProblemTable: React.FC<Props> = ({
                   </td>
 
                   {/* Difficulty */}
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-3.5">
                     <DifficultyBadge difficulty={prob.difficulty} />
                   </td>
 
                   {/* Topics (max 3 shown, then +N) */}
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-3.5">
                     <div className="flex flex-wrap items-center gap-1">
                       {(prob.topics || []).slice(0, 3).map((topic) => (
                         <span
                           key={topic}
-                          className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded"
+                          className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-md border border-slate-200/60 dark:border-slate-700/60"
                         >
                           {topic}
                         </span>
                       ))}
                       {(prob.topics || []).length > 3 && (
                         <span
-                          className="px-1.5 py-0.5 text-[10px] font-medium bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded"
+                          className="px-1.5 py-0.5 text-[10px] font-bold bg-slate-200/80 dark:bg-slate-700/80 text-slate-600 dark:text-slate-300 rounded-md"
                           title={(prob.topics || []).slice(3).join(', ')}
                         >
                           +{prob.topics.length - 3}
@@ -143,7 +143,7 @@ export const ProblemTable: React.FC<Props> = ({
                   </td>
 
                   {/* Status */}
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-3.5">
                     <StatusBadge
                       status={prob.status}
                       manuallyMarkedSolved={prob.manuallyMarkedSolved}
@@ -151,29 +151,30 @@ export const ProblemTable: React.FC<Props> = ({
                   </td>
 
                   {/* Confidence: dots & review status */}
-                  <td className="px-3 py-3">
+                  <td className="px-3 py-3.5">
                     <div className="space-y-1">
                       <ConfidenceDots confidence={prob.confidence} />
-                      {prob.status === 'Solved' && (() => {
-                        const rStatus = getProblemReviewStatus(prob);
-                        return (
-                          <div className="flex items-center">
-                            <span
-                              className={`px-1.5 py-0.5 text-[10px] font-semibold rounded border ${rStatus.badgeClass}`}
-                              title={`Spaced Repetition: ${rStatus.statusText} (${rStatus.stage})`}
-                            >
-                              {rStatus.statusText}
-                            </span>
-                          </div>
-                        );
-                      })()}
+                      {prob.status === 'Solved' &&
+                        (() => {
+                          const rStatus = getProblemReviewStatus(prob);
+                          return (
+                            <div className="flex items-center">
+                              <span
+                                className={`px-1.5 py-0.5 text-[10px] font-semibold rounded-md border ${rStatus.badgeClass}`}
+                                title={`Spaced Repetition: ${rStatus.statusText} (${rStatus.stage})`}
+                              >
+                                {rStatus.statusText}
+                              </span>
+                            </div>
+                          );
+                        })()}
                     </div>
                   </td>
 
                   {/* Time Spent (replaces attempts) */}
-                  <td className="px-3 py-3 text-center font-mono text-xs text-slate-600 dark:text-slate-400">
+                  <td className="px-3 py-3.5 text-center font-mono text-xs text-slate-600 dark:text-slate-400">
                     <span
-                      className="inline-flex items-center justify-center gap-1"
+                      className="inline-flex items-center justify-center gap-1 font-semibold"
                       title={
                         prob.timeSpentMinutes !== null && prob.timeSpentMinutes !== undefined
                           ? `${prob.timeSpentMinutes} min${prob.timeSpentMinutes === 1 ? '' : 's'} spent`
@@ -188,7 +189,7 @@ export const ProblemTable: React.FC<Props> = ({
                   </td>
 
                   {/* Last Activity */}
-                  <td className="px-3 py-3 text-right text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                  <td className="px-4 py-3.5 text-right text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     {formatActivityDate(prob.updatedAt || prob.dateAdded)}
                   </td>
                 </tr>
@@ -207,15 +208,15 @@ export const ProblemTable: React.FC<Props> = ({
             <div
               key={prob.id}
               onClick={() => navigate(`/problem/${prob.id}`)}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-sm hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer space-y-3"
+              className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 cursor-pointer space-y-3 transition-all"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-slate-500">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-mono text-xs font-bold text-slate-500">
                       {prob.number ? `#${prob.number}` : ''}
                     </span>
-                    <h3 className="font-semibold text-slate-900 dark:text-white text-base">
+                    <h3 className="font-bold text-slate-900 dark:text-white text-base">
                       {prob.title}
                     </h3>
                     {isUnassisted && <UnassistedBadge />}
@@ -225,7 +226,7 @@ export const ProblemTable: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={(e) => onToggleStar(prob.id, prob.starred, e)}
-                  className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800"
+                  className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0"
                   aria-label={prob.starred ? 'Unstar problem' : 'Star problem'}
                 >
                   <Star
@@ -245,20 +246,21 @@ export const ProblemTable: React.FC<Props> = ({
                   manuallyMarkedSolved={prob.manuallyMarkedSolved}
                 />
                 <ConfidenceDots confidence={prob.confidence} />
-                {prob.status === 'Solved' && (() => {
-                  const rStatus = getProblemReviewStatus(prob);
-                  return (
-                    <span
-                      className={`px-1.5 py-0.5 text-[10px] font-semibold rounded border ${rStatus.badgeClass}`}
-                      title={`Spaced Repetition: ${rStatus.statusText}`}
-                    >
-                      {rStatus.statusText}
-                    </span>
-                  );
-                })()}
+                {prob.status === 'Solved' &&
+                  (() => {
+                    const rStatus = getProblemReviewStatus(prob);
+                    return (
+                      <span
+                        className={`px-1.5 py-0.5 text-[10px] font-semibold rounded-md border ${rStatus.badgeClass}`}
+                        title={`Spaced Repetition: ${rStatus.statusText}`}
+                      >
+                        {rStatus.statusText}
+                      </span>
+                    );
+                  })()}
                 {prob.timeSpentMinutes !== null && prob.timeSpentMinutes !== undefined && (
                   <span
-                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-md"
                     title={`${prob.timeSpentMinutes} min${prob.timeSpentMinutes === 1 ? '' : 's'} spent`}
                   >
                     <Clock className="w-3 h-3 text-slate-400" />
@@ -272,13 +274,13 @@ export const ProblemTable: React.FC<Props> = ({
                   {prob.topics.slice(0, 4).map((t) => (
                     <span
                       key={t}
-                      className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded"
+                      className="px-2 py-0.5 text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-md border border-slate-200/50 dark:border-slate-700/50"
                     >
                       {t}
                     </span>
                   ))}
                   {prob.topics.length > 4 && (
-                    <span className="px-1.5 py-0.5 text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md">
                       +{prob.topics.length - 4}
                     </span>
                   )}
@@ -291,13 +293,16 @@ export const ProblemTable: React.FC<Props> = ({
 
       {/* Pagination Bar */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2 px-1 text-sm text-slate-600 dark:text-slate-400">
+        <div className="flex items-center justify-between pt-2 px-1 text-xs text-slate-500 dark:text-slate-400">
           <div>
-            Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
-            <span className="font-medium">
+            Showing{' '}
+            <span className="font-bold text-slate-800 dark:text-slate-200">{startIndex + 1}</span>{' '}
+            to{' '}
+            <span className="font-bold text-slate-800 dark:text-slate-200">
               {Math.min(startIndex + pageSize, totalProblems)}
             </span>{' '}
-            of <span className="font-medium">{totalProblems}</span> problems
+            of <span className="font-bold text-slate-800 dark:text-slate-200">{totalProblems}</span>{' '}
+            problems
           </div>
 
           <div className="flex items-center gap-1">
@@ -305,13 +310,13 @@ export const ProblemTable: React.FC<Props> = ({
               type="button"
               disabled={page <= 1}
               onClick={() => onPageChange(page - 1)}
-              className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors cursor-pointer"
               aria-label="Previous page"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
 
-            <span className="px-3 py-1 text-xs font-semibold">
+            <span className="px-3 py-1 text-xs font-semibold bg-slate-100 dark:bg-slate-800 rounded-lg">
               Page {page} of {totalPages}
             </span>
 
@@ -319,7 +324,7 @@ export const ProblemTable: React.FC<Props> = ({
               type="button"
               disabled={page >= totalPages}
               onClick={() => onPageChange(page + 1)}
-              className="p-1.5 rounded-lg border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors"
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors cursor-pointer"
               aria-label="Next page"
             >
               <ChevronRight className="w-4 h-4" />

@@ -178,7 +178,8 @@ export const problemsRepo = {
       const attempts = await db.attempts.where('problemId').equals(id).toArray();
       const hasPassingReview = attempts.some((a) => a.review?.verdict === 'pass');
       const isSolvedByAi =
-        hasPassingReview || (existing.status === 'Solved' && existing.manuallyMarkedSolved === false);
+        hasPassingReview ||
+        (existing.status === 'Solved' && existing.manuallyMarkedSolved === false);
 
       updates.status = 'Solved';
       if (updates.manuallyMarkedSolved === undefined) {
@@ -327,7 +328,9 @@ export const problemsRepo = {
       attempts: attempts.sort((a, b) => a.attemptNumber - b.attemptNumber),
       mentorMessages: mentorMessages.sort((a, b) => a.level - b.level),
       notes: problem.notes || '',
-      noteReviews: noteReviews.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+      noteReviews: noteReviews.sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      ),
       statusAtSnapshot: problem.status,
     };
 
@@ -500,7 +503,9 @@ export const problemsRepo = {
 
     // 3. Sorting (Default review queue sort: reviewUrgency_desc, else dateAdded_desc)
     const sort =
-      params.reviewQueueOnly && !params.sort ? 'reviewUrgency_desc' : params.sort || 'dateAdded_desc';
+      params.reviewQueueOnly && !params.sort
+        ? 'reviewUrgency_desc'
+        : params.sort || 'dateAdded_desc';
 
     if (sort === 'reviewUrgency_desc') {
       items = sortByReviewUrgency(items);
@@ -770,7 +775,7 @@ export const settingsRepo = {
         ...partial,
         hasConfiguredApiKey:
           partial.hasConfiguredApiKey ??
-          (isConfiguringKey ? true : current.hasConfiguredApiKey ?? false),
+          (isConfiguringKey ? true : (current.hasConfiguredApiKey ?? false)),
         key: 'current',
       };
       await db.settings.put(updated);
@@ -835,4 +840,3 @@ export async function clearAllLocalData(): Promise<void> {
     }
   );
 }
-

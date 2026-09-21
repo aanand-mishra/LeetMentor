@@ -5,11 +5,7 @@ import { SettingsPage } from '../pages/SettingsPage';
 import { ProblemForm } from '../components/problem/ProblemForm';
 import { AttemptsTab } from '../components/problem/AttemptsTab';
 import { Header } from '../components/layout/Header';
-import {
-  settingsRepo,
-  clearAllLocalData,
-  problemsRepo,
-} from '../db';
+import { settingsRepo, clearAllLocalData, problemsRepo } from '../db';
 import { ToastProvider } from '../context/ToastContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import type { Problem } from '../types';
@@ -45,10 +41,7 @@ describe('Settings sync, temperature debounce, and logo verification', () => {
       <MemoryRouter>
         <ThemeProvider>
           <ToastProvider>
-            <ProblemForm
-              onSubmit={async () => { }}
-              submitButtonText="Create Problem"
-            />
+            <ProblemForm onSubmit={async () => {}} submitButtonText="Create Problem" />
           </ToastProvider>
         </ThemeProvider>
       </MemoryRouter>
@@ -89,11 +82,7 @@ describe('Settings sync, temperature debounce, and logo verification', () => {
     render(
       <ThemeProvider>
         <ToastProvider>
-          <AttemptsTab
-            problem={problem as Problem}
-            attempts={[]}
-            onProblemUpdated={() => { }}
-          />
+          <AttemptsTab problem={problem as Problem} attempts={[]} onProblemUpdated={() => {}} />
         </ToastProvider>
       </ThemeProvider>
     );
@@ -162,4 +151,3 @@ describe('Settings sync, temperature debounce, and logo verification', () => {
     expect(screen.queryByText('Setting updated')).not.toBeInTheDocument();
   });
 });
-

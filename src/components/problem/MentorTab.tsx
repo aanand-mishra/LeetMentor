@@ -45,7 +45,8 @@ const HINT_CONFIGS: HintConfig[] = [
     badgeLabel: 'Level 1',
     icon: HelpCircle,
     description: 'Restatement of the core challenge; 1–2 guiding questions. No technique named.',
-    previewNote: 'Helps clarify constraints and identify wasted work without revealing any algorithms.',
+    previewNote:
+      'Helps clarify constraints and identify wasted work without revealing any algorithms.',
   },
   {
     level: 2,
@@ -68,7 +69,8 @@ const HINT_CONFIGS: HintConfig[] = [
     title: 'Solution',
     badgeLabel: 'Level 4',
     icon: CheckCircle,
-    description: 'Full commented code, complexity analysis, edge cases, common mistakes, related problems.',
+    description:
+      'Full commented code, complexity analysis, edge cases, common mistakes, related problems.',
     previewNote: 'Complete reference implementation, edge cases, and pattern generalization.',
   },
 ];
@@ -104,7 +106,11 @@ export const MentorTab: React.FC<Props> = ({
 
   const isStatementMissing = !problem.statement || !problem.statement.trim();
   const [copiedLevel, setCopiedLevel] = useState<number | null>(null);
-  const [lastError, setLastError] = useState<{ level: number; message: string; is503: boolean } | null>(null);
+  const [lastError, setLastError] = useState<{
+    level: number;
+    message: string;
+    is503: boolean;
+  } | null>(null);
 
   const handleCopyContent = async (content: string, level: number) => {
     try {
@@ -277,7 +283,8 @@ def solve(nums, target):
     } catch (err) {
       console.error('Failed to unlock hint:', err);
       const msg = err instanceof Error ? err.message : 'Failed to retrieve hint from mentor.';
-      const is503 = msg.includes('503') || msg.includes('No capacity') || msg.includes('UNAVAILABLE');
+      const is503 =
+        msg.includes('503') || msg.includes('No capacity') || msg.includes('UNAVAILABLE');
       setLastError({ level, message: msg, is503 });
       toast.error(msg);
     } finally {
@@ -319,7 +326,8 @@ def solve(nums, target):
     } catch (err) {
       console.error('Failed to regenerate hint:', err);
       const msg = err instanceof Error ? err.message : 'Failed to regenerate hint.';
-      const is503 = msg.includes('503') || msg.includes('No capacity') || msg.includes('UNAVAILABLE');
+      const is503 =
+        msg.includes('503') || msg.includes('No capacity') || msg.includes('UNAVAILABLE');
       setLastError({ level, message: msg, is503 });
       toast.error(msg);
     } finally {
@@ -333,37 +341,41 @@ def solve(nums, target):
       {isStatementMissing && <StatementMissingWarning problemId={problem.id} />}
 
       {/* Header bar / Usage indicator */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
               AI Mentor — 4 Gated Progressive Hints
             </h2>
-            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full text-xs font-mono font-medium text-slate-600 dark:text-slate-300">
+            <div className="flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200/80 dark:border-indigo-800/80 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold text-indigo-700 dark:text-indigo-300">
               <span>Hints unlocked:</span>
-              <span className="font-bold text-indigo-600 dark:text-indigo-400">
+              <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
                 {problem.hintsUsed || 0}
               </span>
               <span>/ 4</span>
             </div>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Hints are strictly gated to preserve your problem-solving muscle. Unlock sequentially from Nudge to Solution.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
+            Hints are strictly gated to preserve your problem-solving muscle. Unlock sequentially
+            from Nudge to Solution.
           </p>
         </div>
 
         {/* 4-dot hint level display (FR-5.4) */}
-        <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-50 dark:bg-slate-800/60 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mr-1">Progress:</span>
+        <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-50 dark:bg-slate-800/60 px-3.5 py-2 rounded-xl border border-slate-200/80 dark:border-slate-700 shadow-xs">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">
+            Progress:
+          </span>
           {([1, 2, 3, 4] as const).map((lvl) => {
             const unlocked = isLevelUnlocked(lvl);
             return (
               <div
                 key={lvl}
-                className={`w-3 h-3 rounded-full transition-colors ${unlocked
-                  ? 'bg-indigo-600 dark:bg-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900'
-                  : 'bg-slate-200 dark:bg-slate-700'
-                  }`}
+                className={`w-3.5 h-3.5 rounded-full transition-all ${
+                  unlocked
+                    ? 'bg-indigo-600 dark:bg-indigo-500 ring-2 ring-indigo-200 dark:ring-indigo-900 shadow-xs'
+                    : 'bg-slate-200 dark:bg-slate-700'
+                }`}
                 title={`Level ${lvl}: ${HINT_CONFIGS[lvl - 1].title} (${unlocked ? 'Unlocked' : 'Locked'})`}
               />
             );
@@ -384,23 +396,25 @@ def solve(nums, target):
             <div
               key={cfg.level}
               data-testid={`mentor-card-level-${cfg.level}`}
-              className={`rounded-xl border transition-all duration-200 ${unlocked
-                ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
-                : canUnlock
-                  ? 'bg-slate-50/70 dark:bg-slate-900/50 border-dashed border-slate-300 dark:border-slate-700'
-                  : 'bg-slate-100/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/60 opacity-60'
-                }`}
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
+                unlocked
+                  ? 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800 shadow-xs'
+                  : canUnlock
+                    ? 'bg-slate-50/80 dark:bg-slate-900/60 border-indigo-200 dark:border-indigo-900/50 shadow-xs'
+                    : 'bg-slate-100/40 dark:bg-slate-900/20 border-slate-200/80 dark:border-slate-800/40 opacity-70'
+              }`}
             >
               {/* Card Header */}
               <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-start sm:items-center gap-3.5">
                   <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${unlocked
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60'
-                      : canUnlock
-                        ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                        : 'bg-slate-200/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-600'
-                      }`}
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                      unlocked
+                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60'
+                        : canUnlock
+                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                          : 'bg-slate-200/60 dark:bg-slate-800/40 text-slate-400 dark:text-slate-600'
+                    }`}
                   >
                     {unlocked ? <Icon className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
                   </div>
@@ -450,10 +464,11 @@ def solve(nums, target):
                             ? `Unlock Level ${cfg.level - 1} (${HINT_CONFIGS[cfg.level - 2].title}) first`
                             : undefined
                         }
-                        className={`px-4 py-2 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${canUnlock
-                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow active:scale-[0.99]'
-                          : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
-                          }`}
+                        className={`px-4 py-2 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-all ${
+                          canUnlock
+                            ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm hover:shadow active:scale-[0.99]'
+                            : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                        }`}
                       >
                         {isLoading ? (
                           <>
@@ -486,9 +501,7 @@ def solve(nums, target):
                       <span className="font-semibold text-rose-800 dark:text-rose-300">
                         Generation Notice
                       </span>
-                      <p className="text-rose-700 dark:text-rose-400 mt-0.5">
-                        {lastError.message}
-                      </p>
+                      <p className="text-rose-700 dark:text-rose-400 mt-0.5">{lastError.message}</p>
                     </div>
                   </div>
                   {lastError.is503 && (
@@ -514,7 +527,8 @@ def solve(nums, target):
                       <span>{cfg.badgeLabel} Guide</span>
                       <span className="text-slate-300 dark:text-slate-700">•</span>
                       <span className="text-[11px] font-mono">
-                        ~{Math.max(1, Math.ceil(message.content.split(/\s+/).length / 150))} min read
+                        ~{Math.max(1, Math.ceil(message.content.split(/\s+/).length / 150))} min
+                        read
                       </span>
                     </div>
 
@@ -528,7 +542,9 @@ def solve(nums, target):
                         {copiedLevel === cfg.level ? (
                           <>
                             <Check className="w-3.5 h-3.5 text-emerald-500" />
-                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Copied!</span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                              Copied!
+                            </span>
                           </>
                         ) : (
                           <>
@@ -560,7 +576,10 @@ def solve(nums, target):
                   {/* Metadata footer */}
                   <div className="px-5 py-2.5 bg-slate-50/50 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                     <span>
-                      Model: {message.model && message.model !== 'gemini-1.5-flash' ? message.model : configuredModel}
+                      Model:{' '}
+                      {message.model && message.model !== 'gemini-1.5-flash'
+                        ? message.model
+                        : configuredModel}
                     </span>
                     <span>Unlocked: {new Date(message.createdAt).toLocaleString()}</span>
                   </div>

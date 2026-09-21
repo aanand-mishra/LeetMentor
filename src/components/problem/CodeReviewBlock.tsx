@@ -156,13 +156,17 @@ export const CodeReviewBlock: React.FC<Props> = ({ review, onFixAndResubmit }) =
                   className={`p-3 rounded-lg border text-xs space-y-1.5 ${severityStyles[issue.severity]}`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm"><MathText content={issue.title} /></span>
+                    <span className="font-bold text-sm">
+                      <MathText content={issue.title} />
+                    </span>
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border border-current">
                       {issue.severity}
                     </span>
                   </div>
 
-                  <p className="leading-relaxed opacity-95"><MathText content={issue.detail} /></p>
+                  <p className="leading-relaxed opacity-95">
+                    <MathText content={issue.detail} />
+                  </p>
 
                   <div className="p-2 bg-white/70 dark:bg-black/30 rounded border border-current/20 font-medium">
                     <span className="font-bold">Suggestion: </span>
@@ -183,7 +187,9 @@ export const CodeReviewBlock: React.FC<Props> = ({ review, onFixAndResubmit }) =
           </h4>
           <ul className="list-disc list-inside space-y-1 pl-1 font-medium">
             {review.positives.map((pos, idx) => (
-              <li key={idx}><MathText content={pos} /></li>
+              <li key={idx}>
+                <MathText content={pos} />
+              </li>
             ))}
           </ul>
         </div>
@@ -195,7 +201,9 @@ export const CodeReviewBlock: React.FC<Props> = ({ review, onFixAndResubmit }) =
           <ArrowRight className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
           <div>
             <span className="font-bold text-slate-900 dark:text-white">Next Step: </span>
-            <span className="text-slate-600 dark:text-slate-300"><MathText content={review.nextStep} /></span>
+            <span className="text-slate-600 dark:text-slate-300">
+              <MathText content={review.nextStep} />
+            </span>
           </div>
         </div>
 

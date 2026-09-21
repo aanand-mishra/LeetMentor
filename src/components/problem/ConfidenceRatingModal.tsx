@@ -126,7 +126,10 @@ export const ConfidenceRatingModal: React.FC<Props> = ({
             </p>
 
             <div className="space-y-2">
-              <label htmlFor="modal-time-spent" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label
+                htmlFor="modal-time-spent"
+                className="block text-xs font-semibold text-slate-700 dark:text-slate-300"
+              >
                 Time Spent (minutes)
               </label>
               <div className="relative">
@@ -184,8 +187,8 @@ export const ConfidenceRatingModal: React.FC<Props> = ({
           /* STEP 2: CONFIDENCE RATING */
           <div className="mt-4 space-y-4">
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              How confident do you feel solving this or a similar problem without hints? This drives your
-              review queue.
+              How confident do you feel solving this or a similar problem without hints? This drives
+              your review queue.
             </p>
 
             <div className="space-y-2">

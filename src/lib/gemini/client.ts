@@ -232,4 +232,3 @@ export async function requestVoiceTranscription(
     model: activeModel,
   };
 }
-

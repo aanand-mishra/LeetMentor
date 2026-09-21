@@ -36,11 +36,7 @@ describe('FR-5 — AI Mentor: Progressive Hints Acceptance Criteria', () => {
   it('Level 3 cannot be unlocked while Level 2 is locked; button disabled with explanatory tooltip (FR-5 Acceptance)', async () => {
     render(
       <ToastProvider>
-        <MentorTab
-          problem={sampleProblem}
-          mentorMessages={[]}
-          onProblemUpdated={vi.fn()}
-        />
+        <MentorTab problem={sampleProblem} mentorMessages={[]} onProblemUpdated={vi.fn()} />
       </ToastProvider>
     );
 
@@ -140,7 +136,10 @@ describe('FR-5 — AI Mentor: Progressive Hints Acceptance Criteria', () => {
     expect(updatedProblem?.status).toBe('In Progress');
     expect(updatedProblem?.dateFirstAttempt).toBeTruthy();
 
-    const storedMessages = await db.mentorMessages.where('problemId').equals(sampleProblem.id).toArray();
+    const storedMessages = await db.mentorMessages
+      .where('problemId')
+      .equals(sampleProblem.id)
+      .toArray();
     expect(storedMessages.length).toBe(2);
     expect(storedMessages.some((m: MentorMessage) => m.level === 2)).toBe(true);
   });
@@ -180,7 +179,9 @@ describe('FR-5 — AI Mentor: Progressive Hints Acceptance Criteria', () => {
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeInTheDocument();
       expect(
-        screen.getByText(/This reveals the full solution\. You've unlocked 3 hints so far\. Continue\?/i)
+        screen.getByText(
+          /This reveals the full solution\. You've unlocked 3 hints so far\. Continue\?/i
+        )
       ).toBeInTheDocument();
     });
 
@@ -200,11 +201,7 @@ describe('FR-5 — AI Mentor: Progressive Hints Acceptance Criteria', () => {
   it('confirms there is NO free-form chat input anywhere in the Mentor tab (FR-5.5)', () => {
     const { container } = render(
       <ToastProvider>
-        <MentorTab
-          problem={sampleProblem}
-          mentorMessages={[]}
-          onProblemUpdated={vi.fn()}
-        />
+        <MentorTab problem={sampleProblem} mentorMessages={[]} onProblemUpdated={vi.fn()} />
       </ToastProvider>
     );
 

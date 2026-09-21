@@ -308,4 +308,3 @@ Hard rules:
 export function buildTranscriptionUserPrompt(): string {
   return 'Transcribe the attached voice note into text.';
 }
-

@@ -88,10 +88,13 @@ export const StartRevisionModal: React.FC<Props> = ({
             <span>Intelligent Revision Record Keeping</span>
           </div>
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-            All your code attempts, mentor hints, time logs, confidence, and notes from this session will be safely preserved into a permanent <strong>Revision History Record</strong>.
+            All your code attempts, mentor hints, time logs, confidence, and notes from this session
+            will be safely preserved into a permanent <strong>Revision History Record</strong>.
           </p>
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-            Your active workspace will be initialized to a <strong>clean slate</strong> (0 attempts, hints re-locked to eliminate spoilers, timer reset) so you can genuinely re-solve and measure your mastery over time.
+            Your active workspace will be initialized to a <strong>clean slate</strong> (0 attempts,
+            hints re-locked to eliminate spoilers, timer reset) so you can genuinely re-solve and
+            measure your mastery over time.
           </p>
         </div>
 
@@ -147,7 +150,9 @@ export const StartRevisionModal: React.FC<Props> = ({
         <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 rounded-xl text-xs text-amber-800 dark:text-amber-300">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
-            Ready to test your recall? Once started, your active code workspace will be cleared and status changed to <strong>In Progress</strong>. You can view all archived sessions anytime in the <strong>Revisions</strong> tab.
+            Ready to test your recall? Once started, your active code workspace will be cleared and
+            status changed to <strong>In Progress</strong>. You can view all archived sessions
+            anytime in the <strong>Revisions</strong> tab.
           </p>
         </div>
 
@@ -168,7 +173,9 @@ export const StartRevisionModal: React.FC<Props> = ({
             className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all disabled:opacity-50 cursor-pointer"
           >
             <Archive className="w-4 h-4" />
-            <span>{submitting ? 'Archiving & Resetting...' : 'Archive & Start Fresh Revision'}</span>
+            <span>
+              {submitting ? 'Archiving & Resetting...' : 'Archive & Start Fresh Revision'}
+            </span>
           </button>
         </div>
       </div>

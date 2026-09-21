@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  ExternalLink,
-  Star,
-  Edit2,
-  Trash2,
-  AlertTriangle,
-  RotateCcw,
-} from 'lucide-react';
+import { ExternalLink, Star, Edit2, Trash2, AlertTriangle, RotateCcw } from 'lucide-react';
 import type { Problem, Status } from '../../types';
 import { DifficultyBadge } from '../common/Badges';
 import { ConfidenceDots } from '../common/ConfidenceDots';
@@ -62,9 +55,7 @@ export const ProblemDetailHeader: React.FC<Props> = ({
 
     if (newStatus === 'Solved') {
       // Check if latest attempt has pass verdict
-      const latestAttempt = await attemptsRepo.getLatestForProblem(
-        problem.id
-      );
+      const latestAttempt = await attemptsRepo.getLatestForProblem(problem.id);
 
       const hasPassingReview = latestAttempt?.review?.verdict === 'pass';
 
@@ -124,15 +115,17 @@ export const ProblemDetailHeader: React.FC<Props> = ({
 
   return (
     <>
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm space-y-4 mb-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4 mb-6 transition-all">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           {/* Title & Metadata */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2.5">
-              <span className="font-mono text-sm font-semibold text-slate-500 dark:text-slate-400">
-                {problem.number ? `#${problem.number}` : ''}
-              </span>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+              {problem.number && (
+                <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 font-mono text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
+                  #{problem.number}
+                </span>
+              )}
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                 {problem.title}
               </h1>
 
@@ -142,7 +135,7 @@ export const ProblemDetailHeader: React.FC<Props> = ({
                   href={problem.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors p-1"
+                  className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                   title="Open on Leetcode (opens in new tab)"
                   aria-label="Open on Leetcode"
                 >
@@ -156,14 +149,15 @@ export const ProblemDetailHeader: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={handleToggleStar}
-                className="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 aria-label={problem.starred ? 'Unstar problem' : 'Star problem'}
               >
                 <Star
-                  className={`w-5 h-5 ${problem.starred
+                  className={`w-5 h-5 transition-transform hover:scale-110 ${
+                    problem.starred
                       ? 'text-amber-500 fill-amber-500'
                       : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'
-                    }`}
+                  }`}
                 />
               </button>
             </div>
@@ -172,27 +166,30 @@ export const ProblemDetailHeader: React.FC<Props> = ({
           {/* Actions & Status Controls */}
           <div className="flex flex-wrap items-center gap-3">
             {/* Status Selector */}
-            <div className="flex items-center gap-1.5">
-              <label htmlFor="detail-status" className="text-xs font-medium text-slate-500">
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/70 p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700">
+              <label
+                htmlFor="detail-status"
+                className="text-xs font-bold uppercase tracking-wider text-slate-400 pl-1"
+              >
                 Status:
               </label>
               <select
                 id="detail-status"
                 value={problem.status}
                 onChange={(e) => handleStatusChange(e.target.value as Status)}
-                className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer shadow-xs"
               >
                 <option value="Not Started">Not Started</option>
                 <option value="In Progress">In Progress</option>
-                <option value="Solved">
-                  Solved {problem.manuallyMarkedSolved ? '(*)' : ''}
-                </option>
+                <option value="Solved">Solved {problem.manuallyMarkedSolved ? '(*)' : ''}</option>
               </select>
             </div>
 
             {/* Confidence Controls */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
-              <span className="text-xs font-medium text-slate-500">Confidence:</span>
+            <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-200/80 dark:border-slate-700">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Confidence:
+              </span>
               <ConfidenceDots
                 confidence={problem.confidence}
                 interactive={true}
@@ -206,7 +203,7 @@ export const ProblemDetailHeader: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={onReviseNow}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-[0.98]"
                 title="Archive current session into history and test again with a clean slate"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -215,10 +212,10 @@ export const ProblemDetailHeader: React.FC<Props> = ({
             )}
 
             {/* Edit & Delete Action Buttons */}
-            <div className="flex items-center gap-1 pl-2 border-l border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-1 pl-1">
               <Link
                 to={`/problem/${problem.id}/edit`}
-                className="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
                 title="Edit problem"
                 aria-label="Edit problem"
               >
@@ -227,7 +224,7 @@ export const ProblemDetailHeader: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setIsDeleteDialogOpen(true)}
-                className="p-2 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
+                className="p-2 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors cursor-pointer"
                 title="Delete problem"
                 aria-label="Delete problem"
               >

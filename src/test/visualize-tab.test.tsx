@@ -4,10 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProblemDetailPage } from '../pages/ProblemDetailPage';
 import { VisualizeTab } from '../components/problem/VisualizeTab';
-import {
-  problemsRepo,
-  clearAllLocalData,
-} from '../db';
+import { problemsRepo, clearAllLocalData } from '../db';
 import { ToastProvider } from '../context/ToastContext';
 import {
   buildVisualizationPrompt,
@@ -41,7 +38,8 @@ describe('Visualize Tab & Prompt Generator', () => {
       dateSolved: null,
       topics: ['Array', 'Two Pointers', 'Sorting'],
       patterns: ['Two Pointers'],
-      statement: 'Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] such that i != j, i != k, and j != k, and nums[i] + nums[j] + nums[k] == 0.',
+      statement:
+        'Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] such that i != j, i != k, and j != k, and nums[i] + nums[j] + nums[k] == 0.',
       dateAdded: '2026-09-01',
       updatedAt: '2026-09-01',
       notes: '',
@@ -76,7 +74,7 @@ describe('Visualize Tab & Prompt Generator', () => {
       expect(prompt).toContain('Programming Language for Code Trace: Python');
       expect(prompt).toContain('Primary Human Language for Explanations & Mentorship: English');
       expect(prompt).toContain('Given an integer array nums');
-      expect(prompt).toContain('STUDENT\'S RECENT CODE ATTEMPT');
+      expect(prompt).toContain("STUDENT'S RECENT CODE ATTEMPT");
       expect(prompt).toContain('def threeSum');
       expect(prompt).toContain('Self-Contained Single File');
       expect(prompt).toContain('Step-by-Step Guided Mode');
@@ -100,7 +98,7 @@ describe('Visualize Tab & Prompt Generator', () => {
       expect(prompt).toContain('Programming Language for Code Trace: Java');
       expect(prompt).toContain('Primary Human Language for Explanations & Mentorship: Hinglish');
       expect(prompt).toContain('Problem statement not provided in tracker');
-      expect(prompt).not.toContain('STUDENT\'S RECENT CODE ATTEMPT');
+      expect(prompt).not.toContain("STUDENT'S RECENT CODE ATTEMPT");
       expect(prompt).not.toContain('def threeSum');
     });
 
@@ -135,7 +133,8 @@ describe('Visualize Tab & Prompt Generator', () => {
       dateSolved: '2026-09-01',
       topics: ['Array', 'Hash Table'],
       patterns: ['Hash Map Lookup'],
-      statement: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+      statement:
+        'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
       dateAdded: '2026-09-01',
       updatedAt: '2026-09-01',
       notes: '',
@@ -187,7 +186,9 @@ describe('Visualize Tab & Prompt Generator', () => {
 
       const preview = screen.getByTestId('prompt-preview');
       expect(preview.textContent).toContain('Programming Language for Code Trace: Python');
-      expect(preview.textContent).toContain('Primary Human Language for Explanations & Mentorship: English');
+      expect(preview.textContent).toContain(
+        'Primary Human Language for Explanations & Mentorship: English'
+      );
 
       // Change programming language to Java
       const progSelect = screen.getByTestId('vis-prog-lang-select');
@@ -199,7 +200,9 @@ describe('Visualize Tab & Prompt Generator', () => {
       const humanSelect = screen.getByTestId('vis-human-lang-select');
       await user.selectOptions(humanSelect, 'Nepali');
 
-      expect(preview.textContent).toContain('Primary Human Language for Explanations & Mentorship: Nepali');
+      expect(preview.textContent).toContain(
+        'Primary Human Language for Explanations & Mentorship: Nepali'
+      );
     });
 
     it('toggles student code attempt inclusion in the prompt', async () => {
@@ -282,7 +285,8 @@ describe('Visualize Tab & Prompt Generator', () => {
         difficulty: 'Hard',
         topics: ['Array', 'Two Pointers'],
         patterns: ['Two Pointers'],
-        statement: 'Given n non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.',
+        statement:
+          'Given n non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.',
         status: 'Not Started',
         confidence: null,
         timeSpentMinutes: null,

@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, Star, AlertCircle, Bookmark, ChevronDown } from 'lucide-react';
-import type {
-  Difficulty,
-  Status,
-  ProblemFilterParams,
-  SortOption,
-} from '../../types';
+import type { Difficulty, Status, ProblemFilterParams, SortOption } from '../../types';
 
 interface Props {
   filters: ProblemFilterParams;
@@ -177,231 +172,251 @@ export const FilterPanel: React.FC<Props> = ({
       </div>
 
       {/* Filter Facet Controls Bar */}
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        {/* Quick Toggles */}
-        <button
-          type="button"
-          onClick={() => onFilterChange({ starredOnly: !filters.starredOnly })}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-            filters.starredOnly
-              ? 'bg-amber-500 text-white border-amber-500 shadow-sm'
-              : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-          }`}
-        >
-          <Star className={`w-3.5 h-3.5 ${filters.starredOnly ? 'fill-current' : ''}`} />
-          Starred
-        </button>
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl p-3 shadow-xs space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          {/* Section 1: Quick Focus Queues */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => onFilterChange({ starredOnly: !filters.starredOnly })}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-all cursor-pointer ${
+                filters.starredOnly
+                  ? 'bg-amber-500 text-white border-amber-500 shadow-xs'
+                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Star
+                className={`w-3.5 h-3.5 ${filters.starredOnly ? 'fill-current text-white' : 'text-amber-500'}`}
+              />
+              Starred
+            </button>
 
-        <button
-          type="button"
-          onClick={() => onFilterChange({ reviewQueueOnly: !filters.reviewQueueOnly })}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-            filters.reviewQueueOnly
-              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-              : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-          }`}
-          title="Intelligent review queue (DSA-SRS): items due for revision or low confidence"
-        >
-          <Bookmark className="w-3.5 h-3.5" />
-          <span>Review Queue</span>
-          {dueReviewCount > 0 && (
-            <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+            <button
+              type="button"
+              onClick={() => onFilterChange({ reviewQueueOnly: !filters.reviewQueueOnly })}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-all cursor-pointer ${
                 filters.reviewQueueOnly
-                  ? 'bg-white text-indigo-700'
-                  : 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300'
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
+              title="Intelligent review queue (DSA-SRS): items due for revision or low confidence"
             >
-              {dueReviewCount} due
-            </span>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onFilterChange({ unresolvedReviewOnly: !filters.unresolvedReviewOnly })}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-            filters.unresolvedReviewOnly
-              ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-              : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-          }`}
-          title="Latest attempt received a revise verdict"
-        >
-          <AlertCircle className="w-3.5 h-3.5" />
-          Unresolved Review
-        </button>
-
-        {/* Difficulty Pill Selectors */}
-        <div className="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block" />
-
-        {(['Easy', 'Medium', 'Hard'] as Difficulty[]).map((diff) => {
-          const isSelected = filters.difficulty?.includes(diff);
-          return (
-            <button
-              key={diff}
-              type="button"
-              onClick={() => toggleDifficulty(diff)}
-              className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors ${
-                isSelected
-                  ? diff === 'Easy'
-                    ? 'bg-emerald-600 text-white border-emerald-600'
-                    : diff === 'Medium'
-                      ? 'bg-amber-600 text-white border-amber-600'
-                      : 'bg-rose-600 text-white border-rose-600'
-                  : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-              }`}
-            >
-              {diff}
+              <Bookmark className="w-3.5 h-3.5" />
+              <span>Review Queue</span>
+              {dueReviewCount > 0 && (
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    filters.reviewQueueOnly
+                      ? 'bg-white text-indigo-700'
+                      : 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300'
+                  }`}
+                >
+                  {dueReviewCount} due
+                </span>
+              )}
             </button>
-          );
-        })}
 
-        {/* Status Pill Selectors */}
-        <div className="h-4 w-px bg-slate-300 dark:bg-slate-700 mx-1 hidden sm:block" />
-
-        {(['Not Started', 'In Progress', 'Solved'] as Status[]).map((st) => {
-          const isSelected = filters.status?.includes(st);
-          return (
             <button
-              key={st}
               type="button"
-              onClick={() => toggleStatus(st)}
-              className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors ${
-                isSelected
-                  ? 'bg-indigo-600 text-white border-indigo-600'
-                  : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+              onClick={() =>
+                onFilterChange({ unresolvedReviewOnly: !filters.unresolvedReviewOnly })
+              }
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-all cursor-pointer ${
+                filters.unresolvedReviewOnly
+                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
+              title="Latest attempt received a revise verdict"
             >
-              {st}
+              <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+              Unresolved Review
             </button>
-          );
-        })}
+          </div>
 
-        {/* Topics Dropdown with In-Dropdown Search */}
-        <div className="relative" ref={topicDropdownRef}>
-          <button
-            type="button"
-            onClick={() => setTopicDropdownOpen((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-              (filters.topics || []).length > 0
-                ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/60 dark:border-indigo-800 dark:text-indigo-300'
-                : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-            }`}
-          >
-            Topics {(filters.topics || []).length > 0 && `(${(filters.topics || []).length})`}
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-
-          {topicDropdownOpen && (
-            <div className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 p-2 text-xs">
-              <input
-                type="text"
-                value={topicSearch}
-                onChange={(e) => setTopicSearch(e.target.value)}
-                placeholder="Search topics..."
-                className="w-full px-2 py-1.5 mb-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-              <div className="max-h-48 overflow-y-auto space-y-1">
-                {filteredTopicList.map((topic) => {
-                  const isChecked = filters.topics?.includes(topic);
-                  return (
-                    <label
-                      key={topic}
-                      className="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-slate-800 dark:text-slate-200"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleTopic(topic)}
-                        className="rounded text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <span>{topic}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Patterns Dropdown with In-Dropdown Search */}
-        <div className="relative" ref={patternDropdownRef}>
-          <button
-            type="button"
-            onClick={() => setPatternDropdownOpen((prev) => !prev)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-              (filters.patterns || []).length > 0
-                ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/60 dark:border-indigo-800 dark:text-indigo-300'
-                : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
-            }`}
-          >
-            Patterns {(filters.patterns || []).length > 0 && `(${(filters.patterns || []).length})`}
-            <ChevronDown className="w-3.5 h-3.5" />
-          </button>
-
-          {patternDropdownOpen && (
-            <div className="absolute left-0 top-full mt-1.5 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-30 p-2 text-xs">
-              <input
-                type="text"
-                value={patternSearch}
-                onChange={(e) => setPatternSearch(e.target.value)}
-                placeholder="Search patterns..."
-                className="w-full px-2 py-1.5 mb-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs outline-none focus:ring-1 focus:ring-indigo-500"
-              />
-              <div className="max-h-48 overflow-y-auto space-y-1">
-                {filteredPatternList.map((pat) => {
-                  const isChecked = filters.patterns?.includes(pat);
-                  return (
-                    <label
-                      key={pat}
-                      className="flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-slate-800 dark:text-slate-200"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => togglePattern(pat)}
-                        className="rounded text-indigo-600 focus:ring-indigo-500"
-                      />
-                      <span>{pat}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Confidence Filters */}
-        <div className="flex items-center gap-1">
-          <span className="text-slate-400 ml-1">Rating:</span>
-          {([1, 2, 3, 4, 5] as const).map((conf) => {
-            const isSelected = filters.confidence?.includes(conf);
-            return (
+          {/* Section 2: Taxonomy Dropdowns */}
+          <div className="flex items-center gap-1.5">
+            {/* Topics Dropdown with In-Dropdown Search */}
+            <div className="relative" ref={topicDropdownRef}>
               <button
-                key={conf}
                 type="button"
-                onClick={() => toggleConfidence(conf)}
-                className={`w-6 h-6 rounded flex items-center justify-center font-bold text-xs transition-colors ${
-                  isSelected
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                onClick={() => setTopicDropdownOpen((prev) => !prev)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-all cursor-pointer ${
+                  (filters.topics || []).length > 0
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/70 dark:border-indigo-800 dark:text-indigo-300 shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                {conf}
+                Topics {(filters.topics || []).length > 0 && `(${(filters.topics || []).length})`}
+                <ChevronDown className="w-3.5 h-3.5" />
               </button>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => toggleConfidence('unrated')}
-            className={`px-2 py-1 rounded text-xs transition-colors ${
-              filters.confidence?.includes('unrated')
-                ? 'bg-slate-600 text-white'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
-            }`}
-          >
-            Unrated
-          </button>
+
+              {topicDropdownOpen && (
+                <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 p-2 text-xs">
+                  <input
+                    type="text"
+                    value={topicSearch}
+                    onChange={(e) => setTopicSearch(e.target.value)}
+                    placeholder="Search topics..."
+                    className="w-full px-2.5 py-1.5 mb-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <div className="max-h-48 overflow-y-auto space-y-0.5">
+                    {filteredTopicList.map((topic) => {
+                      const isChecked = filters.topics?.includes(topic);
+                      return (
+                        <label
+                          key={topic}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-slate-800 dark:text-slate-200"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleTopic(topic)}
+                            className="rounded text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span>{topic}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Patterns Dropdown with In-Dropdown Search */}
+            <div className="relative" ref={patternDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setPatternDropdownOpen((prev) => !prev)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-all cursor-pointer ${
+                  (filters.patterns || []).length > 0
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 dark:bg-indigo-950/70 dark:border-indigo-800 dark:text-indigo-300 shadow-xs'
+                    : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                Patterns{' '}
+                {(filters.patterns || []).length > 0 && `(${(filters.patterns || []).length})`}
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+
+              {patternDropdownOpen && (
+                <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-30 p-2 text-xs">
+                  <input
+                    type="text"
+                    value={patternSearch}
+                    onChange={(e) => setPatternSearch(e.target.value)}
+                    placeholder="Search patterns..."
+                    className="w-full px-2.5 py-1.5 mb-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <div className="max-h-48 overflow-y-auto space-y-0.5">
+                    {filteredPatternList.map((pat) => {
+                      const isChecked = filters.patterns?.includes(pat);
+                      return (
+                        <label
+                          key={pat}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer text-slate-800 dark:text-slate-200"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => togglePattern(pat)}
+                            className="rounded text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span>{pat}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Difficulty, Status & Confidence Segmented Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+          {/* Difficulty & Status Pills */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Difficulty Pill Selectors */}
+            <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700">
+              {(['Easy', 'Medium', 'Hard'] as Difficulty[]).map((diff) => {
+                const isSelected = filters.difficulty?.includes(diff);
+                return (
+                  <button
+                    key={diff}
+                    type="button"
+                    onClick={() => toggleDifficulty(diff)}
+                    className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                      isSelected
+                        ? diff === 'Easy'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : diff === 'Medium'
+                            ? 'bg-amber-600 text-white shadow-xs'
+                            : 'bg-rose-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {diff}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Status Pill Selectors */}
+            <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700">
+              {(['Not Started', 'In Progress', 'Solved'] as Status[]).map((st) => {
+                const isSelected = filters.status?.includes(st);
+                return (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => toggleStatus(st)}
+                    className={`px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {st}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Confidence Filters */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-400 font-medium">Rating:</span>
+            <div className="flex items-center p-0.5 bg-slate-100 dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700">
+              {([1, 2, 3, 4, 5] as const).map((conf) => {
+                const isSelected = filters.confidence?.includes(conf);
+                return (
+                  <button
+                    key={conf}
+                    type="button"
+                    onClick={() => toggleConfidence(conf)}
+                    className={`w-6 h-6 rounded-md flex items-center justify-center font-bold text-xs transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {conf}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => toggleConfidence('unrated')}
+                className={`px-2 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                  filters.confidence?.includes('unrated')
+                    ? 'bg-slate-700 dark:bg-slate-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                Unrated
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

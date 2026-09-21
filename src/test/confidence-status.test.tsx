@@ -143,9 +143,7 @@ describe('FR-7 — Confidence Rating and Status Logic Acceptance Tests', () => {
 
     // Should prompt manual override confirmation modal with exact text per FR-7.2
     await waitFor(() => {
-      expect(
-        screen.getByText(/No passing review yet\. Mark solved anyway\?/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/No passing review yet\. Mark solved anyway\?/i)).toBeInTheDocument();
     });
 
     // Confirm manual override
@@ -242,10 +240,7 @@ describe('FR-7 — Confidence Rating and Status Logic Acceptance Tests', () => {
     render(
       <BrowserRouter>
         <ToastProvider>
-          <ProblemDetailHeader
-            problem={solvedProblem}
-            onProblemUpdated={onProblemUpdated}
-          />
+          <ProblemDetailHeader problem={solvedProblem} onProblemUpdated={onProblemUpdated} />
         </ToastProvider>
       </BrowserRouter>
     );

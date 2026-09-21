@@ -42,14 +42,10 @@ export const RevisionsTab: React.FC<Props> = ({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Sort chronological for progression analysis (oldest first)
-  const chronological = [...revisions].sort(
-    (a, b) => a.revisionNumber - b.revisionNumber
-  );
+  const chronological = [...revisions].sort((a, b) => a.revisionNumber - b.revisionNumber);
 
   // Newest first for list display
-  const newestFirst = [...revisions].sort(
-    (a, b) => b.revisionNumber - a.revisionNumber
-  );
+  const newestFirst = [...revisions].sort((a, b) => b.revisionNumber - a.revisionNumber);
 
   // Compute analytics
   const firstRev = chronological[0];
@@ -100,27 +96,30 @@ export const RevisionsTab: React.FC<Props> = ({
   return (
     <div className="space-y-6">
       {/* Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs transition-all">
         <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <RotateCcw className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <span>Revision History & Deep Analytics</span>
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5 tracking-tight">
+            <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400">
+              <RotateCcw className="w-4 h-4" />
+            </div>
+            <span>Revision History &amp; Deep Analytics</span>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 shadow-xs">
               {revisions.length} {revisions.length === 1 ? 'Snapshot' : 'Snapshots'}
             </span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Intelligent tracking of your recall speed, independence, and cognitive mastery across practice sessions
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+            Intelligent tracking of your recall speed, independence, and cognitive mastery across
+            practice sessions
           </p>
         </div>
 
         <button
           type="button"
           onClick={() => setIsStartModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all cursor-pointer shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer shrink-0"
         >
           <RotateCcw className="w-4 h-4" />
-          <span>Revise Now (Archive & Start Clean)</span>
+          <span>Revise Now (Archive &amp; Start Clean)</span>
         </button>
       </div>
 
@@ -221,9 +220,7 @@ export const RevisionsTab: React.FC<Props> = ({
                 {latestConfidence ? `${latestConfidence}/5` : 'Unrated'}
               </span>
               {initialConfidence && initialConfidence !== latestConfidence && (
-                <span className="text-xs text-slate-500 line-through">
-                  {initialConfidence}/5
-                </span>
+                <span className="text-xs text-slate-500 line-through">{initialConfidence}/5</span>
               )}
             </div>
             <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
@@ -250,7 +247,10 @@ export const RevisionsTab: React.FC<Props> = ({
               No Revisions Archived Yet
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Whenever you want to test your recall or revise this problem, click <strong>"Revise Now"</strong>. All your current code attempts, AI code reviews, hints, and notes will be permanently archived here for deep analytics, and your workspace will reset fresh so you can re-solve from memory without spoilers.
+              Whenever you want to test your recall or revise this problem, click{' '}
+              <strong>"Revise Now"</strong>. All your current code attempts, AI code reviews, hints,
+              and notes will be permanently archived here for deep analytics, and your workspace
+              will reset fresh so you can re-solve from memory without spoilers.
             </p>
           </div>
           <div className="pt-2">
@@ -360,7 +360,11 @@ export const RevisionsTab: React.FC<Props> = ({
                     </button>
 
                     <div className="p-1 text-slate-400">
-                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4" />
+                      )}
                     </div>
                   </div>
                 </div>

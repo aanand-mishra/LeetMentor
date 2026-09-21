@@ -126,7 +126,7 @@ export const LeetCodePicker: React.FC<Props> = ({
   return (
     <div
       ref={containerRef}
-      className="rounded-xl border border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/70 dark:bg-indigo-950/30 p-4"
+      className="rounded-2xl border border-indigo-200/80 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/20 p-4 sm:p-5 shadow-xs transition-all"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">

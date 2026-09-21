@@ -108,11 +108,7 @@ describe('FR-4 — Attempts and Code Review Loop Acceptance Criteria', () => {
 
     render(
       <ToastProvider>
-        <AttemptsTab
-          problem={sampleProblem}
-          attempts={[attempt]}
-          onProblemUpdated={() => { }}
-        />
+        <AttemptsTab problem={sampleProblem} attempts={[attempt]} onProblemUpdated={() => {}} />
       </ToastProvider>
     );
 
@@ -135,7 +131,13 @@ describe('FR-4 — Attempts and Code Review Loop Acceptance Criteria', () => {
       verdict: 'revise',
       summary: 'Revise code',
       correctness: { status: 'incorrect', failingCases: [] },
-      complexity: { time: 'O(n^2)', space: 'O(1)', optimalTime: 'O(n)', optimalSpace: 'O(n)', isOptimal: false },
+      complexity: {
+        time: 'O(n^2)',
+        space: 'O(1)',
+        optimalTime: 'O(n)',
+        optimalSpace: 'O(n)',
+        isOptimal: false,
+      },
       issues: [{ severity: 'major', title: 'Slow', detail: 'Slow loop', suggestion: 'Use map' }],
       positives: ['Nice start'],
       nextStep: 'Fix loop',
@@ -152,11 +154,7 @@ describe('FR-4 — Attempts and Code Review Loop Acceptance Criteria', () => {
 
     render(
       <ToastProvider>
-        <AttemptsTab
-          problem={sampleProblem}
-          attempts={[attempt]}
-          onProblemUpdated={() => { }}
-        />
+        <AttemptsTab problem={sampleProblem} attempts={[attempt]} onProblemUpdated={() => {}} />
       </ToastProvider>
     );
 
@@ -180,7 +178,13 @@ describe('FR-4 — Attempts and Code Review Loop Acceptance Criteria', () => {
       verdict: 'pass',
       summary: 'Optimal solution!',
       correctness: { status: 'correct', failingCases: [] },
-      complexity: { time: 'O(n)', space: 'O(n)', optimalTime: 'O(n)', optimalSpace: 'O(n)', isOptimal: true },
+      complexity: {
+        time: 'O(n)',
+        space: 'O(n)',
+        optimalTime: 'O(n)',
+        optimalSpace: 'O(n)',
+        isOptimal: true,
+      },
       issues: [],
       positives: ['Clean'],
       nextStep: 'Try another problem',

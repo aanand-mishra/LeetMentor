@@ -29,17 +29,12 @@ interface Props {
 function normalizeLanguage(lang?: string): string {
   if (!lang) return 'Python';
   const clean = lang.trim();
-  const match = COMMON_PROGRAMMING_LANGUAGES.find(
-    (l) => l.toLowerCase() === clean.toLowerCase()
-  );
+  const match = COMMON_PROGRAMMING_LANGUAGES.find((l) => l.toLowerCase() === clean.toLowerCase());
   if (match) return match;
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
 
-export const VisualizeTab: React.FC<Props> = ({
-  problem,
-  latestAttempt,
-}) => {
+export const VisualizeTab: React.FC<Props> = ({ problem, latestAttempt }) => {
   const toast = useToast();
 
   const [programmingLanguage, setProgrammingLanguage] = useState<string>(() =>
@@ -84,14 +79,10 @@ export const VisualizeTab: React.FC<Props> = ({
   }, [problem.language, latestAttempt?.language]);
 
   const effectiveProgLang =
-    programmingLanguage === 'Other'
-      ? customProgLang.trim() || 'Python'
-      : programmingLanguage;
+    programmingLanguage === 'Other' ? customProgLang.trim() || 'Python' : programmingLanguage;
 
   const effectiveHumanLang =
-    humanLanguage === 'Other'
-      ? customHumanLang.trim() || 'English'
-      : humanLanguage;
+    humanLanguage === 'Other' ? customHumanLang.trim() || 'English' : humanLanguage;
 
   const promptText = useMemo(() => {
     return buildVisualizationPrompt({
@@ -133,23 +124,23 @@ export const VisualizeTab: React.FC<Props> = ({
   return (
     <div className="space-y-6">
       {/* Warning if problem statement is missing */}
-      {!problem.statement?.trim() && (
-        <StatementMissingWarning problemId={problem.id} />
-      )}
+      {!problem.statement?.trim() && <StatementMissingWarning problemId={problem.id} />}
 
       {/* Header Banner */}
-      <div className="p-4 sm:p-5 rounded-xl border border-indigo-100 dark:border-indigo-900/50 bg-gradient-to-r from-indigo-50/60 via-purple-50/40 to-slate-50 dark:from-indigo-950/30 dark:via-purple-950/20 dark:to-slate-900/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="p-1.5 rounded-lg bg-indigo-600 text-white shadow-xs">
+      <div className="p-5 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2.5">
+            <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 shadow-xs">
               <Sparkles className="w-4 h-4" />
             </span>
-            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
               Interactive Visualization Prompt Generator
             </h2>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
-            Generate a precision-engineered prompt customized to your preferred programming language and human language. Paste it into any frontier LLM (Claude, ChatGPT, Gemini, DeepSeek) to obtain an interactive, single-file HTML visualization app.
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+            Generate a precision-engineered prompt customized to your preferred programming language
+            and human language. Paste it into any frontier LLM (Claude, ChatGPT, Gemini, DeepSeek)
+            to obtain an interactive, single-file HTML visualization app.
           </p>
         </div>
 
@@ -158,10 +149,10 @@ export const VisualizeTab: React.FC<Props> = ({
             type="button"
             onClick={handleCopyPrompt}
             data-testid="copy-prompt-btn"
-            className={`px-4 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all shadow-xs ${
+            className={`px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all shadow-xs active:scale-[0.98] cursor-pointer ${
               copied
                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-indigo-500/20 hover:shadow-md'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
             }`}
           >
             {copied ? (
@@ -180,12 +171,12 @@ export const VisualizeTab: React.FC<Props> = ({
       </div>
 
       {/* Language & Customization Selectors */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
         {/* Programming Language */}
         <div className="space-y-1.5">
           <label
             htmlFor="vis-prog-lang"
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300"
+            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
           >
             <Code2 className="w-3.5 h-3.5 text-indigo-500" />
             <span>Programming Language</span>
@@ -195,7 +186,7 @@ export const VisualizeTab: React.FC<Props> = ({
             data-testid="vis-prog-lang-select"
             value={programmingLanguage}
             onChange={(e) => setProgrammingLanguage(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+            className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium"
           >
             {COMMON_PROGRAMMING_LANGUAGES.map((lang) => (
               <option key={lang} value={lang}>
@@ -210,7 +201,7 @@ export const VisualizeTab: React.FC<Props> = ({
               placeholder="e.g. C#, Scala, Haskell"
               value={customProgLang}
               onChange={(e) => setCustomProgLang(e.target.value)}
-              className="mt-1.5 w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              className="mt-1.5 w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
           )}
         </div>
@@ -219,7 +210,7 @@ export const VisualizeTab: React.FC<Props> = ({
         <div className="space-y-1.5">
           <label
             htmlFor="vis-human-lang"
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300"
+            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
           >
             <Globe className="w-3.5 h-3.5 text-indigo-500" />
             <span>Human Language (Explanations)</span>
@@ -229,7 +220,7 @@ export const VisualizeTab: React.FC<Props> = ({
             data-testid="vis-human-lang-select"
             value={humanLanguage}
             onChange={(e) => setHumanLanguage(e.target.value)}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+            className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 cursor-pointer font-medium"
           >
             {COMMON_HUMAN_LANGUAGES.map((lang) => (
               <option key={lang} value={lang}>
@@ -244,7 +235,7 @@ export const VisualizeTab: React.FC<Props> = ({
               placeholder="e.g. Italian, Hinglish, Russian"
               value={customHumanLang}
               onChange={(e) => setCustomHumanLang(e.target.value)}
-              className="mt-1.5 w-full px-3 py-1.5 text-xs rounded-md border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+              className="mt-1.5 w-full px-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
           )}
         </div>
@@ -258,7 +249,7 @@ export const VisualizeTab: React.FC<Props> = ({
               checked={includeCode}
               disabled={!hasStudentCode}
               onChange={(e) => setIncludeCode(e.target.checked)}
-              className="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 h-4 w-4 disabled:opacity-40"
+              className="rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 h-4 w-4 disabled:opacity-40 cursor-pointer"
             />
             <span className={!hasStudentCode ? 'text-slate-400 dark:text-slate-500' : ''}>
               Include recent code attempt
@@ -287,7 +278,11 @@ export const VisualizeTab: React.FC<Props> = ({
             onClick={handleCopyPrompt}
             className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? (
+              <Check className="w-3.5 h-3.5 text-emerald-500" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
             <span>{copied ? 'Copied!' : 'Copy to clipboard'}</span>
           </button>
         </div>
@@ -298,7 +293,9 @@ export const VisualizeTab: React.FC<Props> = ({
               <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
-              <span className="ml-2 text-slate-400">prompt.txt ({effectiveProgLang} • {effectiveHumanLang})</span>
+              <span className="ml-2 text-slate-400">
+                prompt.txt ({effectiveProgLang} • {effectiveHumanLang})
+              </span>
             </div>
             <button
               type="button"
@@ -306,7 +303,11 @@ export const VisualizeTab: React.FC<Props> = ({
               className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
               title="Copy prompt"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              {copied ? (
+                <Check className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
             </button>
           </div>
 
@@ -382,18 +383,22 @@ export const VisualizeTab: React.FC<Props> = ({
         </div>
         <ol className="list-decimal list-inside space-y-1.5 leading-relaxed pl-1">
           <li>
-            Select your desired <strong>Programming Language</strong> for the code trace and <strong>Human Language</strong> for the mentor explanations.
+            Select your desired <strong>Programming Language</strong> for the code trace and{' '}
+            <strong>Human Language</strong> for the mentor explanations.
           </li>
           <li>
-            Click <strong className="text-indigo-600 dark:text-indigo-400">Copy Prompt</strong> to copy the ready-to-run prompt.
+            Click <strong className="text-indigo-600 dark:text-indigo-400">Copy Prompt</strong> to
+            copy the ready-to-run prompt.
           </li>
-          <li>
-            Paste the prompt into Claude, ChatGPT, Gemini, or DeepSeek.
-          </li>
+          <li>Paste the prompt into Claude, ChatGPT, Gemini, or DeepSeek.</li>
           <li>
             <span className="inline-flex items-center gap-1">
               <Laptop className="w-3.5 h-3.5 text-slate-400 inline" />
-              Save the generated HTML block into a local file (e.g. <code className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[11px] font-mono font-semibold">visualizer.html</code>) and double-click to open it in your browser!
+              Save the generated HTML block into a local file (e.g.{' '}
+              <code className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-[11px] font-mono font-semibold">
+                visualizer.html
+              </code>
+              ) and double-click to open it in your browser!
             </span>
           </li>
         </ol>

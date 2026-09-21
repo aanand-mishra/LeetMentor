@@ -50,9 +50,7 @@ export const AttemptsTab: React.FC<Props> = ({
   const userEditedLanguageRef = useRef(false);
 
   const [code, setCode] = useState(prefillCode);
-  const [language, setLanguage] = useState(
-    problem.language || 'python'
-  );
+  const [language, setLanguage] = useState(problem.language || 'python');
   const [userComment, setUserComment] = useState('');
 
   // Sync language with settings or previous attempt if not manually modified
@@ -166,7 +164,10 @@ export const AttemptsTab: React.FC<Props> = ({
         } else {
           // Fallback realistic mock review when no API key configured
           await new Promise((res) => setTimeout(res, 400));
-          const isOpt = attempt.code.includes('seen') || attempt.code.includes('dict') || attempt.code.includes('map');
+          const isOpt =
+            attempt.code.includes('seen') ||
+            attempt.code.includes('dict') ||
+            attempt.code.includes('map');
           reviewResult = {
             verdict: isOpt ? 'pass' : 'revise',
             summary: isOpt
@@ -186,13 +187,13 @@ export const AttemptsTab: React.FC<Props> = ({
             issues: isOpt
               ? []
               : [
-                {
-                  severity: 'major',
-                  title: 'Quadratic Time Complexity',
-                  detail: 'Nested loop over array leads to O(n^2) runtime.',
-                  suggestion: 'Trade space for time by caching visited elements in a map.',
-                },
-              ],
+                  {
+                    severity: 'major',
+                    title: 'Quadratic Time Complexity',
+                    detail: 'Nested loop over array leads to O(n^2) runtime.',
+                    suggestion: 'Trade space for time by caching visited elements in a map.',
+                  },
+                ],
             positives: ['Clean logic structure', 'Proper syntax and argument handling'],
             nextStep: isOpt
               ? 'Great work! Try an advanced variation or review your notes.'
@@ -339,7 +340,10 @@ export const AttemptsTab: React.FC<Props> = ({
 
         {/* Optional Comment */}
         <div className="space-y-1">
-          <label htmlFor="attempt-comment" className="block text-xs font-medium text-slate-600 dark:text-slate-400">
+          <label
+            htmlFor="attempt-comment"
+            className="block text-xs font-medium text-slate-600 dark:text-slate-400"
+          >
             What changed in this attempt? (Optional)
           </label>
           <input
@@ -358,24 +362,24 @@ export const AttemptsTab: React.FC<Props> = ({
             type="button"
             disabled={isSubmitting || !code.trim()}
             onClick={() => handleSave(false)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-all disabled:opacity-50 cursor-pointer active:scale-[0.98]"
           >
             <Save className="w-3.5 h-3.5" />
-            Save attempt
+            <span>Save attempt</span>
           </button>
 
           <button
             type="button"
             disabled={isSubmitting || !code.trim()}
             onClick={() => handleSave(true)}
-            className="inline-flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white text-xs font-bold rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting ? (
               'Saving & Reviewing...'
             ) : (
               <>
                 <Send className="w-3.5 h-3.5" />
-                Save & review
+                <span>Save &amp; review</span>
               </>
             )}
           </button>
@@ -492,7 +496,9 @@ export const AttemptsTab: React.FC<Props> = ({
                       />
                     ) : (
                       <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-                        <span className="text-xs text-slate-500">This attempt was saved without a review.</span>
+                        <span className="text-xs text-slate-500">
+                          This attempt was saved without a review.
+                        </span>
                         <button
                           type="button"
                           onClick={() => performReview(att)}

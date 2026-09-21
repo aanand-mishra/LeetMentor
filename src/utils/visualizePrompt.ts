@@ -46,11 +46,16 @@ export function buildVisualizationPrompt({
   humanLanguage,
   includeCode = true,
 }: BuildVisualizationPromptOptions): string {
-  const numberStr = problem.number !== null && problem.number !== undefined ? `${problem.number}. ` : '';
+  const numberStr =
+    problem.number !== null && problem.number !== undefined ? `${problem.number}. ` : '';
   const title = problem.title.trim();
   const difficulty = problem.difficulty;
-  const topicsStr = problem.topics && problem.topics.length > 0 ? problem.topics.join(', ') : 'None specified';
-  const patternsStr = problem.patterns && problem.patterns.length > 0 ? problem.patterns.join(', ') : 'None specified';
+  const topicsStr =
+    problem.topics && problem.topics.length > 0 ? problem.topics.join(', ') : 'None specified';
+  const patternsStr =
+    problem.patterns && problem.patterns.length > 0
+      ? problem.patterns.join(', ')
+      : 'None specified';
 
   const hasStatement = Boolean(problem.statement && problem.statement.trim());
   const statementText = hasStatement

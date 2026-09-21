@@ -8,10 +8,7 @@ interface Props {
   language?: string;
 }
 
-export const CodeDisplay: React.FC<Props> = ({
-  code,
-  previousCode,
-}) => {
+export const CodeDisplay: React.FC<Props> = ({ code, previousCode }) => {
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showDiff, setShowDiff] = useState(false);

@@ -295,16 +295,16 @@ export const NotesTab: React.FC<Props> = ({
   return (
     <div className="space-y-6">
       {/* Editor & Actions Container */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden transition-all">
         {/* Top Control Bar */}
-        <div className="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50">
+        <div className="px-5 py-3.5 border-b border-slate-200/80 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-900/60">
           <div className="flex items-center gap-3">
             {/* Mode Switcher */}
-            <div className="inline-flex rounded-lg bg-slate-200 dark:bg-slate-800 p-0.5">
+            <div className="inline-flex rounded-xl bg-slate-200/80 dark:bg-slate-800 p-0.5">
               <button
                 type="button"
                 onClick={() => setViewMode('write')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'write'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -316,7 +316,7 @@ export const NotesTab: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setViewMode('preview')}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                   viewMode === 'preview'
                     ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -328,7 +328,7 @@ export const NotesTab: React.FC<Props> = ({
             </div>
 
             {/* Autosave Status Indicator (FR-6.1) */}
-            <div className="text-xs font-medium flex items-center gap-1.5">
+            <div className="text-xs font-semibold flex items-center gap-1.5">
               {saveStatus === 'saving' && (
                 <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
                   <RotateCw className="w-3 h-3 animate-spin" />

@@ -206,7 +206,31 @@ export const ProblemForm: React.FC<Props> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
+    <form
+      onSubmit={handleSubmit}
+      onKeyDown={(e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          handleSubmit(e);
+        }
+      }}
+      className="space-y-6 max-w-3xl"
+    >
+      {/* Top Header & Breadcrumb Nav */}
+      <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-800">
+        <Link
+          to={cancelHref}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Cancel &amp; return</span>
+        </Link>
+        <span className="text-xs text-slate-400 font-mono hidden sm:inline">
+          Tip: Press Ctrl+Enter to save
+        </span>
+      </div>
+
+      {/* Catalog Quick Picker */}
       <LeetCodePicker
         onSelect={handleCatalogSelect}
         selectedEntry={catalogEntry}
@@ -214,127 +238,115 @@ export const ProblemForm: React.FC<Props> = ({
         disabled={isSubmitting}
       />
 
-      <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
-        <Link
-          to={cancelHref}
-          className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Cancel
-        </Link>
-        <button
-          type="submit"
-          data-testid="submit-problem-btn"
-          disabled={isSubmitting}
-          className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-colors disabled:opacity-50"
-        >
-          {isSubmitting ? 'Saving...' : submitButtonText}
-        </button>
-      </div>
+      {/* Card 1: Problem Identity */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          Problem Details
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Problem Number */}
+          <div className="space-y-1.5 md:col-span-1">
+            <label
+              htmlFor="problem-number"
+              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+            >
+              Leetcode Number
+            </label>
+            <input
+              id="problem-number"
+              type="number"
+              min="1"
+              value={number}
+              onChange={(e) => handleNumberChange(e.target.value)}
+              placeholder="e.g. 75"
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+            />
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Problem Number */}
-        <div className="space-y-1.5 md:col-span-1">
-          <label
-            htmlFor="problem-number"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
-          >
-            Leetcode Number
-          </label>
-          <input
-            id="problem-number"
-            type="number"
-            min="1"
-            value={number}
-            onChange={(e) => handleNumberChange(e.target.value)}
-            placeholder="e.g. 75"
-            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
-          />
+          {/* Title */}
+          <div className="space-y-1.5 md:col-span-3">
+            <label
+              htmlFor="problem-title"
+              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+            >
+              Title <span className="text-rose-500">*</span>
+            </label>
+            <input
+              id="problem-title"
+              type="text"
+              value={title}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              placeholder="e.g. Sort colors"
+              maxLength={200}
+              className={`w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border rounded-xl text-sm focus:ring-2 outline-none transition-shadow ${
+                titleError
+                  ? 'border-rose-500 focus:ring-rose-500'
+                  : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
+              }`}
+            />
+            {titleError && (
+              <p className="flex items-center gap-1 text-xs text-rose-500 mt-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {titleError}
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Title */}
-        <div className="space-y-1.5 md:col-span-3">
+        {/* Duplicate Number Non-blocking Warning (FR-1.2) */}
+        {numberWarning && (
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-200">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div>
+              Problem #{number} already exists:{' '}
+              <Link
+                to={`/problem/${numberWarning.id}`}
+                className="font-semibold underline hover:text-amber-900 dark:hover:text-amber-100"
+              >
+                {numberWarning.title}
+              </Link>
+              . You can still save this problem if intentional.
+            </div>
+          </div>
+        )}
+
+        {/* URL */}
+        <div className="space-y-1.5">
           <label
-            htmlFor="problem-title"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+            htmlFor="problem-url"
+            className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
           >
-            Title <span className="text-rose-500">*</span>
+            Leetcode URL
           </label>
           <input
-            id="problem-title"
-            type="text"
-            value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="e.g. Sort colors"
-            maxLength={200}
-            className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${
-              titleError
+            id="problem-url"
+            type="url"
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              if (urlError) setUrlError(null);
+            }}
+            placeholder="https://leetcode.com/problems/sort-colors/"
+            className={`w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border rounded-xl text-sm focus:ring-2 outline-none transition-shadow ${
+              urlError
                 ? 'border-rose-500 focus:ring-rose-500'
-                : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
+                : 'border-slate-200 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
             }`}
           />
-          {titleError && (
+          {urlError && (
             <p className="flex items-center gap-1 text-xs text-rose-500 mt-1">
               <AlertCircle className="w-3.5 h-3.5" />
-              {titleError}
+              {urlError}
             </p>
           )}
         </div>
       </div>
 
-      {/* Duplicate Number Non-blocking Warning (FR-1.2) */}
-      {numberWarning && (
-        <div className="p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-lg flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-200">
-          <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-          <div>
-            Problem #{number} already exists:{' '}
-            <Link
-              to={`/problem/${numberWarning.id}`}
-              className="font-semibold underline hover:text-amber-900 dark:hover:text-amber-100"
-            >
-              {numberWarning.title}
-            </Link>
-            . You can still save this problem if intentional.
-          </div>
-        </div>
-      )}
-
-      {/* URL */}
-      <div className="space-y-1.5">
-        <label
-          htmlFor="problem-url"
-          className="block text-sm font-medium text-slate-700 dark:text-slate-300"
-        >
-          Leetcode URL
-        </label>
-        <input
-          id="problem-url"
-          type="url"
-          value={url}
-          onChange={(e) => {
-            setUrl(e.target.value);
-            if (urlError) setUrlError(null);
-          }}
-          placeholder="https://leetcode.com/problems/sort-colors/"
-          className={`w-full px-3 py-2 bg-white dark:bg-slate-900 border rounded-lg text-sm focus:ring-2 outline-none transition-shadow ${
-            urlError
-              ? 'border-rose-500 focus:ring-rose-500'
-              : 'border-slate-300 dark:border-slate-700 focus:ring-indigo-500 focus:border-indigo-500'
-          }`}
-        />
-        {urlError && (
-          <p className="flex items-center gap-1 text-xs text-rose-500 mt-1">
-            <AlertCircle className="w-3.5 h-3.5" />
-            {urlError}
-          </p>
-        )}
-      </div>
-
-      {/* Statement (Large textarea, labeled per §5.3) */}
-      <div className="space-y-1.5">
+      {/* Card 2: Problem Statement */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-2">
         <label
           htmlFor="problem-statement"
-          className="block text-sm font-medium text-slate-700 dark:text-slate-300"
+          className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
         >
           Problem statement (paste or summarize — improves mentor quality a lot)
         </label>
@@ -344,129 +356,137 @@ export const ProblemForm: React.FC<Props> = ({
           value={statement}
           onChange={(e) => setStatement(e.target.value)}
           placeholder="Paste problem description, examples, and constraints here..."
-          className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-sans focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow leading-relaxed"
+          className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-sans focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow leading-relaxed"
         />
       </div>
 
-      {/* Difficulty and Status */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Difficulty */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="problem-difficulty"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
-          >
-            Difficulty <span className="text-rose-500">*</span>
-          </label>
-          <select
-            id="problem-difficulty"
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-          >
-            <option value="Easy">Easy</option>
-            <option value="Medium">Medium</option>
-            <option value="Hard">Hard</option>
-          </select>
-        </div>
-
-        {/* Status */}
-        <div className="space-y-1.5">
-          <label
-            htmlFor="problem-status"
-            className="block text-sm font-medium text-slate-700 dark:text-slate-300"
-          >
-            Status
-          </label>
-          <select
-            id="problem-status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as Status)}
-            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-          >
-            <option value="Not Started">Not Started</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Solved">Solved</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Topics & Patterns Tag Inputs */}
-      <div className="space-y-4">
-        <TagInput
-          label="Topics"
-          tags={topics}
-          suggestions={TAXONOMY_TOPICS}
-          onChange={setTopics}
-          placeholder="e.g. Array, Hash Table"
-        />
-
-        <TagInput
-          label="Patterns"
-          tags={patterns}
-          suggestions={TAXONOMY_PATTERNS}
-          onChange={setPatterns}
-          placeholder="e.g. Two Pointers, Sliding Window"
-        />
-      </div>
-
-      {/* Language & Time spent (only shown when status === 'Solved') */}
-      <div
-        className={`grid gap-4 ${status === 'Solved' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}
-      >
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-            Language
-          </label>
-          <select
-            value={COMMON_LANGUAGES.includes(language) ? language : '__other__'}
-            onChange={(e) => {
-              userEditedLanguageRef.current = true;
-              if (e.target.value !== '__other__') {
-                setLanguage(e.target.value);
-              }
-            }}
-            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none cursor-pointer"
-          >
-            {COMMON_LANGUAGES.map((l) => (
-              <option key={l} value={l}>
-                {l.charAt(0).toUpperCase() + l.slice(1)}
-              </option>
-            ))}
-            {!COMMON_LANGUAGES.includes(language) && language && (
-              <option value="__other__">{language}</option>
-            )}
-          </select>
-        </div>
-
-        {status === 'Solved' && (
+      {/* Card 3: Classification & Taxonomy */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-xs space-y-4">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+          Classification &amp; Practice State
+        </h3>
+        {/* Difficulty and Status */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Difficulty */}
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Time Spent (minutes)
+            <label
+              htmlFor="problem-difficulty"
+              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+            >
+              Difficulty <span className="text-rose-500">*</span>
             </label>
-            <input
-              type="number"
-              min="0"
-              value={timeSpentMinutes}
-              onChange={(e) => setTimeSpentMinutes(e.target.value)}
-              placeholder="e.g. 25"
-              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-            />
+            <select
+              id="problem-difficulty"
+              value={difficulty}
+              onChange={(e) => setDifficulty(e.target.value as Difficulty)}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none cursor-pointer"
+            >
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+            </select>
           </div>
-        )}
+
+          {/* Status */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="problem-status"
+              className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300"
+            >
+              Status
+            </label>
+            <select
+              id="problem-status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as Status)}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none cursor-pointer"
+            >
+              <option value="Not Started">Not Started</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Solved">Solved</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Topics & Patterns Tag Inputs */}
+        <div className="space-y-4 pt-1">
+          <TagInput
+            label="Topics"
+            tags={topics}
+            suggestions={TAXONOMY_TOPICS}
+            onChange={setTopics}
+            placeholder="e.g. Array, Hash Table"
+          />
+
+          <TagInput
+            label="Patterns"
+            tags={patterns}
+            suggestions={TAXONOMY_PATTERNS}
+            onChange={setPatterns}
+            placeholder="e.g. Two Pointers, Sliding Window"
+          />
+        </div>
+
+        {/* Language & Time spent (only shown when status === 'Solved') */}
+        <div
+          className={`grid gap-4 pt-1 ${status === 'Solved' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'}`}
+        >
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+              Language
+            </label>
+            <select
+              value={COMMON_LANGUAGES.includes(language) ? language : '__other__'}
+              onChange={(e) => {
+                userEditedLanguageRef.current = true;
+                if (e.target.value !== '__other__') {
+                  setLanguage(e.target.value);
+                }
+              }}
+              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none cursor-pointer"
+            >
+              {COMMON_LANGUAGES.map((l) => (
+                <option key={l} value={l}>
+                  {l.charAt(0).toUpperCase() + l.slice(1)}
+                </option>
+              ))}
+              {!COMMON_LANGUAGES.includes(language) && language && (
+                <option value="__other__">{language}</option>
+              )}
+            </select>
+          </div>
+
+          {status === 'Solved' && (
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Time Spent (minutes)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={timeSpentMinutes}
+                onChange={(e) => setTimeSpentMinutes(e.target.value)}
+                placeholder="e.g. 25"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800">
+      {/* Primary Submit Action Bar */}
+      <div className="pt-2 flex items-center justify-end gap-3">
         <Link
           to={cancelHref}
-          className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+          className="px-4 py-2 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition-colors"
         >
           Cancel
         </Link>
         <button
           type="submit"
+          data-testid="submit-problem-btn"
           disabled={isSubmitting}
-          className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-colors disabled:opacity-50"
+          className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-semibold rounded-xl shadow-xs transition-all disabled:opacity-50 cursor-pointer"
         >
           {isSubmitting ? 'Saving...' : submitButtonText}
         </button>

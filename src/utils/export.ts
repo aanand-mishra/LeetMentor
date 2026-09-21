@@ -149,17 +149,13 @@ export async function importDatabase(
       }
 
       // Merge mode: Skip records whose id already exists
-      const [
-        existingProblemKeys,
-        existingAttemptKeys,
-        existingMentorKeys,
-        existingReviewKeys,
-      ] = await Promise.all([
-        db.problems.toCollection().primaryKeys(),
-        db.attempts.toCollection().primaryKeys(),
-        db.mentorMessages.toCollection().primaryKeys(),
-        db.noteReviews.toCollection().primaryKeys(),
-      ]);
+      const [existingProblemKeys, existingAttemptKeys, existingMentorKeys, existingReviewKeys] =
+        await Promise.all([
+          db.problems.toCollection().primaryKeys(),
+          db.attempts.toCollection().primaryKeys(),
+          db.mentorMessages.toCollection().primaryKeys(),
+          db.noteReviews.toCollection().primaryKeys(),
+        ]);
 
       const problemKeySet = new Set(existingProblemKeys);
       const attemptKeySet = new Set(existingAttemptKeys);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { BookOpen, Code2, Sparkles, Eye, FileText, RotateCcw } from 'lucide-react';
 import { db, problemsRepo } from '../db';
 import { ProblemDetailHeader } from '../components/problem/ProblemDetailHeader';
 import { OverviewTab } from '../components/problem/OverviewTab';
@@ -157,32 +158,34 @@ export const ProblemDetailPage: React.FC = () => {
       />
 
       {/* Tab Strip (FR-3) */}
-      <div className="border-b border-slate-200 dark:border-slate-800 flex items-center space-x-2 sm:space-x-4 overflow-x-auto">
+      <div className="border-b border-slate-200/90 dark:border-slate-800 flex items-center space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar pb-px">
         {/* Overview Tab */}
         <button
           type="button"
           onClick={() => setTab('overview')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 shrink-0 cursor-pointer rounded-t-lg ${
             activeTab === 'overview'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
           }`}
         >
-          Overview
+          <BookOpen className="w-4 h-4" />
+          <span>Overview</span>
         </button>
 
         {/* Attempts Tab */}
         <button
           type="button"
           onClick={() => setTab('attempts')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 shrink-0 cursor-pointer rounded-t-lg ${
             activeTab === 'attempts'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
           }`}
         >
-          Attempts
-          <span className="px-1.5 py-0.5 text-xs font-mono font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+          <Code2 className="w-4 h-4" />
+          <span>Attempts</span>
+          <span className="px-1.5 py-0.2 text-xs font-mono font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700">
             {attempts.length}
           </span>
         </button>
@@ -191,15 +194,16 @@ export const ProblemDetailPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setTab('mentor')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 shrink-0 cursor-pointer rounded-t-lg ${
             activeTab === 'mentor'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
           }`}
         >
-          Mentor
+          <Sparkles className="w-4 h-4 text-amber-500" />
+          <span>Mentor</span>
           {hintsUsed > 0 ? (
-            <span className="px-1.5 py-0.5 text-xs font-mono font-semibold rounded bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300">
+            <span className="px-1.5 py-0.2 text-xs font-mono font-bold rounded-md bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800">
               L{hintsUsed}/4
             </span>
           ) : (
@@ -211,28 +215,30 @@ export const ProblemDetailPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setTab('visualize')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 shrink-0 cursor-pointer rounded-t-lg ${
             activeTab === 'visualize'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
           }`}
         >
-          Visualize
+          <Eye className="w-4 h-4" />
+          <span>Visualize</span>
         </button>
 
         {/* Notes Tab */}
         <button
           type="button"
           onClick={() => setTab('notes')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 shrink-0 cursor-pointer rounded-t-lg ${
             activeTab === 'notes'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
           }`}
         >
-          Notes
+          <FileText className="w-4 h-4" />
+          <span>Notes</span>
           {latestNoteReview && (
-            <span className="px-1.5 py-0.5 text-xs font-mono font-semibold rounded bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300">
+            <span className="px-1.5 py-0.2 text-xs font-mono font-bold rounded-md bg-purple-100 dark:bg-purple-950/70 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
               ★ {latestNoteReview.rating}
             </span>
           )}
@@ -242,15 +248,16 @@ export const ProblemDetailPage: React.FC = () => {
         <button
           type="button"
           onClick={() => setTab('revisions')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 shrink-0 ${
+          className={`px-3.5 py-2.5 text-xs sm:text-sm font-semibold border-b-2 transition-all flex items-center gap-2 shrink-0 cursor-pointer rounded-t-lg ${
             activeTab === 'revisions'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 bg-indigo-50/40 dark:bg-indigo-950/20'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40'
           }`}
         >
-          Revisions
+          <RotateCcw className="w-4 h-4" />
+          <span>Revisions</span>
           {revisions.length > 0 ? (
-            <span className="px-1.5 py-0.5 text-xs font-mono font-semibold rounded-full bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+            <span className="px-1.5 py-0.2 text-xs font-mono font-bold rounded-full bg-indigo-100 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
               {revisions.length}
             </span>
           ) : (

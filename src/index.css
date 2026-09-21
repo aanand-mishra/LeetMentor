@@ -78,19 +78,25 @@
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     text-wrap: balance;
   }
 
   /* Native controls (checkboxes, radios, range) follow the accent. */
-  input, progress {
+  input,
+  progress {
     accent-color: #047857;
   }
-  .dark input, .dark progress {
+  .dark input,
+  .dark progress {
     accent-color: #10b981;
   }
 
-  code, pre, kbd {
+  code,
+  pre,
+  kbd {
     @apply font-mono;
   }
 
@@ -193,8 +199,8 @@
 }
 
 /* Code block syntax highlighting overrides to remove unwanted background/highlight bands */
-pre[class*="language-"],
-code[class*="language-"],
+pre[class*='language-'],
+code[class*='language-'],
 .markdown-body pre code,
 .markdown-body pre {
   background: transparent !important;

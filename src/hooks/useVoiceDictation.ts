@@ -38,7 +38,10 @@ export interface VoiceDictation {
  * transport — same queue, spacing, backoff, and quota counting as every other
  * AI feature. Transcription failures surface the real provider error.
  */
-export function useVoiceDictation({ onTranscript, onError }: UseVoiceDictationOptions): VoiceDictation {
+export function useVoiceDictation({
+  onTranscript,
+  onError,
+}: UseVoiceDictationOptions): VoiceDictation {
   const [status, setStatus] = useState<VoiceDictationStatus>('idle');
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isSupported] = useState(() => isAudioCaptureSupported());

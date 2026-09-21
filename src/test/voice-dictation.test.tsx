@@ -176,12 +176,22 @@ describe('VoiceDictateButton', () => {
     expect(screen.getByRole('button', { name: /dictate notes by voice/i })).toBeInTheDocument();
 
     rerender(
-      <VoiceDictateButton status="recording" recordingSeconds={65} isSupported onToggle={() => {}} />
+      <VoiceDictateButton
+        status="recording"
+        recordingSeconds={65}
+        isSupported
+        onToggle={() => {}}
+      />
     );
     expect(screen.getByRole('button', { name: /stop recording \(1:05\)/i })).toBeInTheDocument();
 
     rerender(
-      <VoiceDictateButton status="transcribing" recordingSeconds={0} isSupported onToggle={() => {}} />
+      <VoiceDictateButton
+        status="transcribing"
+        recordingSeconds={0}
+        isSupported
+        onToggle={() => {}}
+      />
     );
     const btn = screen.getByRole('button', { name: /transcribing/i });
     expect(btn).toBeDisabled();
