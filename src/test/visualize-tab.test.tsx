@@ -3,232 +3,286 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProblemDetailPage } from '../pages/ProblemDetailPage';
+import { VisualizeTab } from '../components/problem/VisualizeTab';
 import {
-  db,
   problemsRepo,
-  visualizationsRepo,
-  settingsRepo,
   clearAllLocalData,
 } from '../db';
 import { ToastProvider } from '../context/ToastContext';
 import {
-  resolveFlashModel,
-  SUPPORTED_FLASH_MODELS,
-} from '../lib/gemini/client';
-import {
-  buildVisualizationSystemInstruction,
-  buildVisualizationUserPrompt,
-  parseVisualizationResponse,
-} from '../lib/gemini/prompts';
+  buildVisualizationPrompt,
+  COMMON_PROGRAMMING_LANGUAGES,
+  COMMON_HUMAN_LANGUAGES,
+} from '../utils/visualizePrompt';
+import type { Problem, Attempt } from '../types';
 
-describe('Phase: Interactive Visualize Tab & Solution Generator', () => {
+describe('Visualize Tab & Prompt Generator', () => {
   beforeEach(async () => {
     await clearAllLocalData();
     vi.restoreAllMocks();
   });
 
-  describe('1. Model Policy & Resolution (Flash models only, strictly no Lite)', () => {
-    it('provides supported Flash models in dropdown definition', () => {
-      expect(SUPPORTED_FLASH_MODELS.length).toBeGreaterThanOrEqual(6);
-      const ids = SUPPORTED_FLASH_MODELS.map((m) => m.id);
-      expect(ids).toContain('gemini-3.8-flash');
-      expect(ids).toContain('gemini-3.7-flash');
-      expect(ids).toContain('gemini-3.6-flash');
-      expect(ids).toContain('gemini-3.5-flash');
-      expect(ids).toContain('gemini-flash-latest');
-      expect(ids).toContain('gemini-2.0-flash');
-      expect(ids).toContain('gemini-1.5-flash');
-      // Must not contain any lite models
-      ids.forEach((id) => {
-        expect(id.toLowerCase()).not.toContain('lite');
+  describe('1. buildVisualizationPrompt utility', () => {
+    const sampleProblem: Problem = {
+      id: 'prob-1',
+      number: 15,
+      title: '3Sum',
+      url: null,
+      difficulty: 'Medium',
+      status: 'In Progress',
+      confidence: 3,
+      timeSpentMinutes: null,
+      hintsUsed: 0,
+      starred: false,
+      userTimeComplexity: null,
+      userSpaceComplexity: null,
+      language: 'python',
+      dateFirstAttempt: null,
+      dateSolved: null,
+      topics: ['Array', 'Two Pointers', 'Sorting'],
+      patterns: ['Two Pointers'],
+      statement: 'Given an integer array nums, return all the triplets [nums[i], nums[j], nums[k]] such that i != j, i != k, and j != k, and nums[i] + nums[j] + nums[k] == 0.',
+      dateAdded: '2026-09-01',
+      updatedAt: '2026-09-01',
+      notes: '',
+    };
+
+    const sampleAttempt: Attempt = {
+      id: 'att-1',
+      problemId: 'prob-1',
+      attemptNumber: 1,
+      code: 'class Solution:\n    def threeSum(self, nums: List[int]) -> List[List[int]]:\n        pass',
+      language: 'python',
+      userComment: 'sort then two pointers',
+      timeSpentMinutes: 20,
+      status: 'accepted',
+      createdAt: '2026-09-01T10:00:00Z',
+      review: null,
+    } as Attempt;
+
+    it('builds a comprehensive prompt with all problem specifications', () => {
+      const prompt = buildVisualizationPrompt({
+        problem: sampleProblem,
+        latestAttempt: sampleAttempt,
+        programmingLanguage: 'Python',
+        humanLanguage: 'English',
+        includeCode: true,
       });
+
+      expect(prompt).toContain('Problem: 15. 3Sum');
+      expect(prompt).toContain('Difficulty: Medium');
+      expect(prompt).toContain('Topics / Data Structures: Array, Two Pointers, Sorting');
+      expect(prompt).toContain('Core Pattern: Two Pointers');
+      expect(prompt).toContain('Programming Language for Code Trace: Python');
+      expect(prompt).toContain('Primary Human Language for Explanations & Mentorship: English');
+      expect(prompt).toContain('Given an integer array nums');
+      expect(prompt).toContain('STUDENT\'S RECENT CODE ATTEMPT');
+      expect(prompt).toContain('def threeSum');
+      expect(prompt).toContain('Self-Contained Single File');
+      expect(prompt).toContain('Step-by-Step Guided Mode');
+      expect(prompt).toContain('Invariant Zones');
     });
 
-    it('rejects lite models and substitutes with default gemini-3.6-flash', () => {
-      expect(resolveFlashModel('gemini-flash-lite-latest')).toBe('gemini-3.6-flash');
-      expect(resolveFlashModel('gemini-2.0-flash-lite')).toBe('gemini-3.6-flash');
-      expect(resolveFlashModel('gemini-2.0-flash-lite-preview-02-05')).toBe('gemini-3.6-flash');
+    it('handles missing statement and omits code when includeCode is false', () => {
+      const noStatementProblem: Problem = {
+        ...sampleProblem,
+        statement: '',
+      };
+
+      const prompt = buildVisualizationPrompt({
+        problem: noStatementProblem,
+        latestAttempt: sampleAttempt,
+        programmingLanguage: 'Java',
+        humanLanguage: 'Hinglish',
+        includeCode: false,
+      });
+
+      expect(prompt).toContain('Programming Language for Code Trace: Java');
+      expect(prompt).toContain('Primary Human Language for Explanations & Mentorship: Hinglish');
+      expect(prompt).toContain('Problem statement not provided in tracker');
+      expect(prompt).not.toContain('STUDENT\'S RECENT CODE ATTEMPT');
+      expect(prompt).not.toContain('def threeSum');
     });
 
-    it('preserves valid non-lite Flash models and upgrades deprecated 2.5', () => {
-      expect(resolveFlashModel('gemini-3.8-flash')).toBe('gemini-3.8-flash');
-      expect(resolveFlashModel('gemini-3.7-flash')).toBe('gemini-3.7-flash');
-      expect(resolveFlashModel('gemini-3.6-flash')).toBe('gemini-3.6-flash');
-      expect(resolveFlashModel('gemini-2.0-flash')).toBe('gemini-2.0-flash');
-      expect(resolveFlashModel('gemini-1.5-flash')).toBe('gemini-1.5-flash');
-      // Deprecated 2.5 upgrades to 3.6
-      expect(resolveFlashModel('gemini-2.5-flash')).toBe('gemini-3.6-flash');
-    });
+    it('exports standard common programming and human languages lists', () => {
+      expect(COMMON_PROGRAMMING_LANGUAGES).toContain('Python');
+      expect(COMMON_PROGRAMMING_LANGUAGES).toContain('JavaScript');
+      expect(COMMON_PROGRAMMING_LANGUAGES).toContain('Java');
+      expect(COMMON_PROGRAMMING_LANGUAGES).toContain('C++');
 
-    it('defaults to gemini-3.6-flash when model is empty or undefined', () => {
-      expect(resolveFlashModel(undefined)).toBe('gemini-3.6-flash');
-      expect(resolveFlashModel('')).toBe('gemini-3.6-flash');
-      expect(resolveFlashModel('   ')).toBe('gemini-3.6-flash');
+      expect(COMMON_HUMAN_LANGUAGES).toContain('English');
+      expect(COMMON_HUMAN_LANGUAGES).toContain('Hinglish');
+      expect(COMMON_HUMAN_LANGUAGES).toContain('Nepali');
     });
   });
 
-  describe('2. Prompt Engineering & Response Parsing', () => {
-    it('builds system instruction mandating standalone single-file HTML and dark-mode aesthetic', () => {
-      const instruction = buildVisualizationSystemInstruction('python', 'English');
-      expect(instruction).toContain('<!DOCTYPE html>');
-      expect(instruction).toContain('Guided Visualizer');
-      expect(instruction).toContain('Interactive Practice Mode');
-      expect(instruction).toContain('Dynamic Invariant Zone Bar');
-      expect(instruction).toContain('Web Audio API');
-      expect(instruction).toContain('ZERO external CDN dependencies');
+  describe('2. VisualizeTab UI Component', () => {
+    const mockProblem: Problem = {
+      id: 'prob-two-sum',
+      number: 1,
+      title: 'Two Sum',
+      url: null,
+      difficulty: 'Easy',
+      status: 'Solved',
+      confidence: 4,
+      timeSpentMinutes: 10,
+      hintsUsed: 0,
+      starred: false,
+      userTimeComplexity: null,
+      userSpaceComplexity: null,
+      language: 'python',
+      dateFirstAttempt: null,
+      dateSolved: '2026-09-01',
+      topics: ['Array', 'Hash Table'],
+      patterns: ['Hash Map Lookup'],
+      statement: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+      dateAdded: '2026-09-01',
+      updatedAt: '2026-09-01',
+      notes: '',
+    };
+
+    const mockAttempt: Attempt = {
+      id: 'att-ts',
+      problemId: 'prob-two-sum',
+      attemptNumber: 1,
+      code: 'def twoSum(nums, target):\n    lookup = {}\n    for i, n in enumerate(nums):\n        if target - n in lookup:\n            return [lookup[target - n], i]\n        lookup[n] = i',
+      language: 'python',
+      userComment: 'hash map for complement',
+      createdAt: '2026-09-01T12:00:00Z',
+      review: null,
+    };
+
+    it('renders the VisualizeTab with selectors, preview, and LLM shortcuts', async () => {
+      render(
+        <ToastProvider>
+          <MemoryRouter>
+            <VisualizeTab problem={mockProblem} latestAttempt={mockAttempt} />
+          </MemoryRouter>
+        </ToastProvider>
+      );
+
+      expect(screen.getByText('Interactive Visualization Prompt Generator')).toBeInTheDocument();
+      expect(screen.getByTestId('copy-prompt-btn')).toBeInTheDocument();
+      expect(screen.getByTestId('vis-prog-lang-select')).toBeInTheDocument();
+      expect(screen.getByTestId('vis-human-lang-select')).toBeInTheDocument();
+      expect(screen.getByTestId('prompt-preview')).toBeInTheDocument();
+
+      // Check external AI buttons
+      expect(screen.getByText('ChatGPT')).toBeInTheDocument();
+      expect(screen.getByText('Claude')).toBeInTheDocument();
+      expect(screen.getByText('Gemini')).toBeInTheDocument();
+      expect(screen.getByText('DeepSeek')).toBeInTheDocument();
     });
 
-    it('builds user prompt with problem details and constraints', () => {
-      const prompt = buildVisualizationUserPrompt({
-        id: 'test-id',
-        number: 75,
-        title: 'Sort Colors',
+    it('updates prompt dynamically when programming language or human language changes', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ToastProvider>
+          <MemoryRouter>
+            <VisualizeTab problem={mockProblem} latestAttempt={mockAttempt} />
+          </MemoryRouter>
+        </ToastProvider>
+      );
+
+      const preview = screen.getByTestId('prompt-preview');
+      expect(preview.textContent).toContain('Programming Language for Code Trace: Python');
+      expect(preview.textContent).toContain('Primary Human Language for Explanations & Mentorship: English');
+
+      // Change programming language to Java
+      const progSelect = screen.getByTestId('vis-prog-lang-select');
+      await user.selectOptions(progSelect, 'Java');
+
+      expect(preview.textContent).toContain('Programming Language for Code Trace: Java');
+
+      // Change human language to Nepali
+      const humanSelect = screen.getByTestId('vis-human-lang-select');
+      await user.selectOptions(humanSelect, 'Nepali');
+
+      expect(preview.textContent).toContain('Primary Human Language for Explanations & Mentorship: Nepali');
+    });
+
+    it('toggles student code attempt inclusion in the prompt', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <ToastProvider>
+          <MemoryRouter>
+            <VisualizeTab problem={mockProblem} latestAttempt={mockAttempt} />
+          </MemoryRouter>
+        </ToastProvider>
+      );
+
+      const preview = screen.getByTestId('prompt-preview');
+      expect(preview.textContent).toContain("STUDENT'S RECENT CODE ATTEMPT");
+      expect(preview.textContent).toContain('def twoSum');
+
+      const checkbox = screen.getByRole('checkbox', { name: /include recent code attempt/i });
+      expect(checkbox).toBeChecked();
+
+      // Uncheck
+      await user.click(checkbox);
+      expect(checkbox).not.toBeChecked();
+      expect(preview.textContent).not.toContain("STUDENT'S RECENT CODE ATTEMPT");
+    });
+
+    it('copies prompt to clipboard when copy button is clicked', async () => {
+      const user = userEvent.setup();
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', {
+        value: {
+          writeText: writeTextMock,
+        },
+        configurable: true,
+        writable: true,
+      });
+
+      render(
+        <ToastProvider>
+          <MemoryRouter>
+            <VisualizeTab problem={mockProblem} latestAttempt={mockAttempt} />
+          </MemoryRouter>
+        </ToastProvider>
+      );
+
+      const copyBtn = screen.getByTestId('copy-prompt-btn');
+      await user.click(copyBtn);
+
+      expect(writeTextMock).toHaveBeenCalledTimes(1);
+      expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('1. Two Sum'));
+      expect(await screen.findByText('Copied to Clipboard!')).toBeInTheDocument();
+    });
+
+    it('shows statement missing warning when problem has no statement', async () => {
+      const problemWithoutStatement: Problem = {
+        ...mockProblem,
+        statement: '',
+      };
+
+      render(
+        <ToastProvider>
+          <MemoryRouter>
+            <VisualizeTab problem={problemWithoutStatement} />
+          </MemoryRouter>
+        </ToastProvider>
+      );
+
+      expect(
+        screen.getByText('Mentor accuracy is limited without the problem statement.')
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe('3. Integration with ProblemDetailPage', () => {
+    it('navigates to Visualize tab and renders the prompt generator', async () => {
+      const created = await problemsRepo.create({
+        number: 42,
+        title: 'Trapping Rain Water',
         url: null,
-        statement: 'Given an array nums with n objects colored red, white, or blue...',
-        difficulty: 'Medium',
+        difficulty: 'Hard',
         topics: ['Array', 'Two Pointers'],
-        patterns: ['Dutch National Flag'],
-        status: 'Not Started',
-        confidence: null,
-        timeSpentMinutes: null,
-        hintsUsed: 0,
-        starred: false,
-        userTimeComplexity: null,
-        userSpaceComplexity: null,
-        notes: '',
-        language: 'python',
-        dateAdded: new Date().toISOString(),
-        dateFirstAttempt: null,
-        dateSolved: null,
-        updatedAt: new Date().toISOString(),
-      });
-
-      expect(prompt).toContain('75. Sort Colors (Medium)');
-      expect(prompt).toContain('Dutch National Flag');
-      expect(prompt).toContain('Given an array nums');
-    });
-
-    it('parses fenced HTML code block and separates markdown walkthrough', () => {
-      const mockRawResponse = `Here is the interactive simulator:
-
-\`\`\`html
-<!DOCTYPE html>
-<html lang="en">
-<head><style>body { background: #0f172a; }</style></head>
-<body><div id="app">Sort Colors Visualizer</div><script>console.log("ready");</script></body>
-</html>
-\`\`\`
-
-### Key Highlights of the Solution
-- Guided visualizer with 3 pointers (low, mid, high).
-- Dynamic partition zones.`;
-
-      const parsed = parseVisualizationResponse(mockRawResponse);
-      expect(parsed.html).toContain('<!DOCTYPE html>');
-      expect(parsed.html).toContain('Sort Colors Visualizer');
-      expect(parsed.html).toContain('console.log("ready")');
-      expect(parsed.explanation).toContain('### Key Highlights of the Solution');
-      expect(parsed.explanation).toContain('Guided visualizer with 3 pointers');
-    });
-
-    it('handles HTML without code block and repairs incomplete tags', () => {
-      const rawHtmlOnly = `<div id="visualizer">Interactive Node</div><script>let mid = 0;</script>`;
-      const parsed = parseVisualizationResponse(rawHtmlOnly);
-      expect(parsed.html).toContain('<!DOCTYPE html>');
-      expect(parsed.html).toContain('Interactive Node');
-      expect(parsed.html).toContain('</html>');
-    });
-  });
-
-  describe('3. Dexie Persistence & Repository', () => {
-    it('saves, retrieves, and updates visualization in IndexedDB', async () => {
-      const prob = await problemsRepo.create({
-        number: 75,
-        title: 'Sort Colors',
-        url: null,
-        statement: 'Sort 0s, 1s, 2s in-place',
-        difficulty: 'Medium',
-        topics: ['Array'],
         patterns: ['Two Pointers'],
-        status: 'Not Started',
-        confidence: null,
-        timeSpentMinutes: null,
-        hintsUsed: 0,
-        starred: false,
-        userTimeComplexity: null,
-        userSpaceComplexity: null,
-        notes: '',
-        language: 'python',
-        dateFirstAttempt: null,
-        dateSolved: null,
-      });
-
-      const saved = await visualizationsRepo.save({
-        problemId: prob.id,
-        html: '<!DOCTYPE html><html><body>Visualizer</body></html>',
-        explanation: 'Three-pointer Dutch National Flag explanation.',
-        model: 'gemini-2.5-flash',
-      });
-
-      expect(saved.id).toBeDefined();
-      expect(saved.problemId).toBe(prob.id);
-
-      const retrieved = await visualizationsRepo.getForProblem(prob.id);
-      expect(retrieved).toBeDefined();
-      expect(retrieved?.html).toContain('Visualizer');
-      expect(retrieved?.model).toBe('gemini-2.5-flash');
-      expect(retrieved?.explanation).toContain('Three-pointer');
-    });
-
-    it('cascades deletion across problems and visualizations', async () => {
-      const prob = await problemsRepo.create({
-        number: 1,
-        title: 'Two Sum',
-        url: null,
-        statement: 'Find two indices...',
-        difficulty: 'Easy',
-        topics: ['Array'],
-        patterns: ['Hash Map'],
-        status: 'Not Started',
-        confidence: null,
-        timeSpentMinutes: null,
-        hintsUsed: 0,
-        starred: false,
-        userTimeComplexity: null,
-        userSpaceComplexity: null,
-        notes: '',
-        language: 'python',
-        dateFirstAttempt: null,
-        dateSolved: null,
-      });
-
-      await visualizationsRepo.save({
-        problemId: prob.id,
-        html: '<html>Two Sum</html>',
-        explanation: 'Hash map visualizer',
-        model: 'gemini-2.5-flash',
-      });
-
-      expect(await db.visualizations.where('problemId').equals(prob.id).count()).toBe(1);
-
-      // Delete problem
-      await problemsRepo.delete(prob.id);
-
-      expect(await db.problems.get(prob.id)).toBeUndefined();
-      expect(await db.visualizations.where('problemId').equals(prob.id).count()).toBe(0);
-    });
-  });
-
-  describe('4. Problem Detail Page Hash Routing (#visualize)', () => {
-    it('activates the Visualize tab via URL hash and renders hero empty state', async () => {
-      const prob = await problemsRepo.create({
-        number: 75,
-        title: 'Sort Colors',
-        url: null,
-        statement: 'Sort red, white, blue objects...',
-        difficulty: 'Medium',
-        topics: ['Array'],
-        patterns: ['Two Pointers'],
+        statement: 'Given n non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.',
         status: 'Not Started',
         confidence: null,
         timeSpentMinutes: null,
@@ -243,315 +297,21 @@ describe('Phase: Interactive Visualize Tab & Solution Generator', () => {
       });
 
       render(
-        <MemoryRouter initialEntries={[`/problem/${prob.id}#visualize`]}>
-          <ToastProvider>
+        <ToastProvider>
+          <MemoryRouter initialEntries={[`/problem/${created.id}#visualize`]}>
             <Routes>
               <Route path="/problem/:id" element={<ProblemDetailPage />} />
             </Routes>
-          </ToastProvider>
-        </MemoryRouter>
+          </MemoryRouter>
+        </ToastProvider>
       );
 
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /^visualize$/i })).toBeInTheDocument();
-        expect(screen.getByText(/Interactive Algorithm Visualizer & Sandbox/i)).toBeInTheDocument();
-        expect(screen.getByText(/Dual Interactive Modes/i)).toBeInTheDocument();
-        expect(screen.getByText(/Generate Interactive Solution & Visualizer/i)).toBeInTheDocument();
-      });
-    });
-
-    it('renders selectable Flash model dropdown in the empty state', async () => {
-      const prob = await problemsRepo.create({
-        number: 75,
-        title: 'Sort Colors',
-        url: null,
-        statement: 'Sort colors',
-        difficulty: 'Medium',
-        topics: ['Array'],
-        patterns: ['Two Pointers'],
-        status: 'Not Started',
-        confidence: null,
-        timeSpentMinutes: null,
-        hintsUsed: 0,
-        starred: false,
-        userTimeComplexity: null,
-        userSpaceComplexity: null,
-        notes: '',
-        language: 'python',
-        dateFirstAttempt: null,
-        dateSolved: null,
+        expect(screen.getByText('Trapping Rain Water')).toBeInTheDocument();
       });
 
-      render(
-        <MemoryRouter initialEntries={[`/problem/${prob.id}#visualize`]}>
-          <ToastProvider>
-            <Routes>
-              <Route path="/problem/:id" element={<ProblemDetailPage />} />
-            </Routes>
-          </ToastProvider>
-        </MemoryRouter>
-      );
-
-      await waitFor(() => {
-        const select = screen.getByLabelText(/Select Gemini Flash Model/i);
-        expect(select).toBeInTheDocument();
-        expect(screen.getByText(/Gemini 3.6 Flash \(Recommended\)/i)).toBeInTheDocument();
-        expect(screen.getByText(/Gemini 3.8 Flash/i)).toBeInTheDocument();
-        expect(screen.getByText(/Gemini 2.0 Flash/i)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('5. Interactive Rendering & Features', () => {
-    it('renders the interactive iframe, code view switch, and download button when visualization exists', async () => {
-      const prob = await problemsRepo.create({
-        number: 75,
-        title: 'Sort Colors',
-        url: null,
-        statement: 'Sort colors',
-        difficulty: 'Medium',
-        topics: ['Array'],
-        patterns: ['Two Pointers'],
-        status: 'Not Started',
-        confidence: null,
-        timeSpentMinutes: null,
-        hintsUsed: 0,
-        starred: false,
-        userTimeComplexity: null,
-        userSpaceComplexity: null,
-        notes: '',
-        language: 'python',
-        dateFirstAttempt: null,
-        dateSolved: null,
-      });
-
-      await visualizationsRepo.save({
-        problemId: prob.id,
-        html: `<!DOCTYPE html><html><body><div id="sim">Dutch National Flag Simulation</div></body></html>`,
-        explanation: '### Invariant Analysis\n`mid` pointer divides the elements into four zones.',
-        model: 'gemini-2.5-flash',
-      });
-
-      render(
-        <MemoryRouter initialEntries={[`/problem/${prob.id}#visualize`]}>
-          <ToastProvider>
-            <Routes>
-              <Route path="/problem/:id" element={<ProblemDetailPage />} />
-            </Routes>
-          </ToastProvider>
-        </MemoryRouter>
-      );
-
-      await waitFor(() => {
-        // Iframe is present
-        const iframe = screen.getByTitle(/Sort Colors Interactive Visualizer/i);
-        expect(iframe).toBeInTheDocument();
-        expect(iframe).toHaveAttribute('sandbox');
-
-        // View switcher buttons are present
-        expect(screen.getByRole('button', { name: /preview/i })).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /code/i })).toBeInTheDocument();
-
-        // Download & Fullscreen buttons are present
-        expect(screen.getByTitle(/Download Standalone HTML/i)).toBeInTheDocument();
-        expect(screen.getByTitle(/Expand Fullscreen/i)).toBeInTheDocument();
-
-        // Walkthrough markdown is rendered
-        expect(screen.getByText(/Mentor's Visual Guide & Algorithm Invariants/i)).toBeInTheDocument();
-        expect(screen.getByText(/Invariant Analysis/i)).toBeInTheDocument();
-      });
-    });
-
-    it('switches to code view when clicking Code button', async () => {
-      const user = userEvent.setup();
-      const prob = await problemsRepo.create({
-        number: 75,
-        title: 'Sort Colors',
-        url: null,
-        statement: 'Sort colors',
-        difficulty: 'Medium',
-        topics: ['Array'],
-        patterns: ['Two Pointers'],
-        status: 'Not Started',
-        confidence: null,
-        timeSpentMinutes: null,
-        hintsUsed: 0,
-        starred: false,
-        userTimeComplexity: null,
-        userSpaceComplexity: null,
-        notes: '',
-        language: 'python',
-        dateFirstAttempt: null,
-        dateSolved: null,
-      });
-
-      await visualizationsRepo.save({
-        problemId: prob.id,
-        html: `<!DOCTYPE html><html><body><div id="sim">Special Simulation Code</div></body></html>`,
-        explanation: 'Dutch National Flag explanation',
-        model: 'gemini-2.5-flash',
-      });
-
-      render(
-        <MemoryRouter initialEntries={[`/problem/${prob.id}#visualize`]}>
-          <ToastProvider>
-            <Routes>
-              <Route path="/problem/:id" element={<ProblemDetailPage />} />
-            </Routes>
-          </ToastProvider>
-        </MemoryRouter>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /code/i })).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /code/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Special Simulation Code/i)).toBeInTheDocument();
-        expect(screen.getByTitle(/Copy HTML code/i)).toBeInTheDocument();
-      });
-    });
-
-    it('handles missing API key gracefully by displaying an alert with link to Settings', async () => {
-      const user = userEvent.setup();
-      await settingsRepo.update({ geminiApiKey: '' });
-
-      const prob = await problemsRepo.create({
-        number: 75,
-        title: 'Sort Colors',
-        url: null,
-        statement: 'Sort colors',
-        difficulty: 'Medium',
-        topics: ['Array'],
-        patterns: ['Two Pointers'],
-        status: 'Not Started',
-        confidence: null,
-        timeSpentMinutes: null,
-        hintsUsed: 0,
-        starred: false,
-        userTimeComplexity: null,
-        userSpaceComplexity: null,
-        notes: '',
-        language: 'python',
-        dateFirstAttempt: null,
-        dateSolved: null,
-      });
-
-      render(
-        <MemoryRouter initialEntries={[`/problem/${prob.id}#visualize`]}>
-          <ToastProvider>
-            <Routes>
-              <Route path="/problem/:id" element={<ProblemDetailPage />} />
-            </Routes>
-          </ToastProvider>
-        </MemoryRouter>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText(/Generate Interactive Solution & Visualizer/i)).toBeInTheDocument();
-      });
-
-      const generateBtn = screen.getByText(/Generate Interactive Solution & Visualizer/i);
-      await user.click(generateBtn);
-
-      await waitFor(() => {
-        expect(screen.getByRole('alert')).toBeInTheDocument();
-        expect(screen.getByText(/Configure API Key in Settings/i)).toBeInTheDocument();
-      });
-    });
-
-    it('appends visualizer walkthrough to Problem Notes when clicking Save to Notes', async () => {
-      const user = userEvent.setup();
-      const prob = await problemsRepo.create({
-        number: 75,
-        title: 'Sort Colors',
-        url: null,
-        statement: 'Sort colors',
-        difficulty: 'Medium',
-        topics: ['Array'],
-        patterns: ['Two Pointers'],
-        status: 'Not Started',
-        confidence: null,
-        timeSpentMinutes: null,
-        hintsUsed: 0,
-        starred: false,
-        userTimeComplexity: null,
-        userSpaceComplexity: null,
-        notes: 'Initial notes.',
-        language: 'python',
-        dateFirstAttempt: null,
-        dateSolved: null,
-      });
-
-      await visualizationsRepo.save({
-        problemId: prob.id,
-        html: `<!DOCTYPE html><html><body>Visualizer</body></html>`,
-        explanation: 'Key Invariant: 0s to the left of low, 2s to the right of high.',
-        model: 'gemini-2.5-flash',
-      });
-
-      render(
-        <MemoryRouter initialEntries={[`/problem/${prob.id}#visualize`]}>
-          <ToastProvider>
-            <Routes>
-              <Route path="/problem/:id" element={<ProblemDetailPage />} />
-            </Routes>
-          </ToastProvider>
-        </MemoryRouter>
-      );
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Save to Problem Notes/i })).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /Save to Problem Notes/i }));
-
-      await waitFor(async () => {
-        const updatedProb = await problemsRepo.getById(prob.id);
-        expect(updatedProb?.notes).toContain('Initial notes.');
-        expect(updatedProb?.notes).toContain('Key Invariant: 0s to the left of low');
-      });
-    });
-
-    it('recovers truncated responses missing </html> and closing code fence', () => {
-      const truncatedGeminiOutput = `\`\`\`html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <style>
-    .node { color: red; }
-  </style>
-</head>
-<body>
-  <div id="app">Truncated App</div>
-  <script>
-    console.log("partially generated");`;
-
-      const parsed = parseVisualizationResponse(truncatedGeminiOutput);
-      expect(parsed.html).toContain('Truncated App');
-      expect(parsed.html).toContain('</script>');
-      expect(parsed.html).toContain('</html>');
-      expect(parsed.html).toContain('#0b0f19');
-    });
-
-    it('injects dark mode background styles to prevent white flashing in iframes', () => {
-      const raw = `\`\`\`html
-<!DOCTYPE html>
-<html>
-<head><title>Test</title></head>
-<body><h1>Hello</h1></body>
-</html>
-\`\`\`
-### Walkthrough
-Explanation text here`;
-
-      const parsed = parseVisualizationResponse(raw);
-      expect(parsed.html).toContain('id="dsa-dark-root"');
-      expect(parsed.html).toContain('background-color: #0b0f19 !important');
-      expect(parsed.explanation).toContain('Explanation text here');
-      expect(parsed.explanation).not.toContain('<!DOCTYPE html>');
+      expect(screen.getByText('Interactive Visualization Prompt Generator')).toBeInTheDocument();
+      expect(screen.getByTestId('prompt-preview').textContent).toContain('42. Trapping Rain Water');
     });
   });
 });

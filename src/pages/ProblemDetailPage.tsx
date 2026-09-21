@@ -78,9 +78,6 @@ export const ProblemDetailPage: React.FC = () => {
   const noteReviews =
     useLiveQuery(() => (id ? db.noteReviews.where('problemId').equals(id).toArray() : []), [id]) ||
     [];
-  const hasVisualization =
-    useLiveQuery(() => (id ? db.visualizations.where('problemId').equals(id).count() : 0), [id]) ||
-    0;
 
   // Sorted attempts (newest first)
   const sortedAttempts = [...attempts].sort((a, b) => b.attemptNumber - a.attemptNumber);
@@ -214,14 +211,6 @@ export const ProblemDetailPage: React.FC = () => {
           }`}
         >
           Visualize
-          {hasVisualization > 0 ? (
-            <span
-              className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs shadow-emerald-500/50"
-              title="Visualizer available"
-            />
-          ) : (
-            <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
-          )}
         </button>
 
         {/* Notes Tab */}

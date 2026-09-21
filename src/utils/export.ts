@@ -1,5 +1,5 @@
 import { db } from '../db';
-import type { Problem, Attempt, MentorMessage, NoteReview, ProblemVisualization, Settings } from '../types';
+import type { Problem, Attempt, MentorMessage, NoteReview, Settings } from '../types';
 
 export interface ExportData {
   schemaVersion: number;
@@ -8,7 +8,6 @@ export interface ExportData {
   attempts: Attempt[];
   mentorMessages: MentorMessage[];
   noteReviews: NoteReview[];
-  visualizations?: ProblemVisualization[];
   settings?: Omit<Settings, 'geminiApiKey'>;
 }
 
@@ -17,7 +16,6 @@ export interface ImportResult {
   importedAttempts: number;
   importedMentor: number;
   importedReviews: number;
-  importedVisualizations?: number;
 }
 
 /**
@@ -26,12 +24,11 @@ export interface ImportResult {
  * The geminiApiKey must be excluded from exports at any nesting level.
  */
 export async function exportDatabaseToJson(): Promise<string> {
-  const [problems, attempts, mentorMessages, noteReviews, visualizations, rawSettings] = await Promise.all([
+  const [problems, attempts, mentorMessages, noteReviews, rawSettings] = await Promise.all([
     db.problems.toArray(),
     db.attempts.toArray(),
     db.mentorMessages.toArray(),
     db.noteReviews.toArray(),
-    db.visualizations.toArray(),
     db.settings.get('current'),
   ]);
 
@@ -50,7 +47,6 @@ export async function exportDatabaseToJson(): Promise<string> {
     attempts,
     mentorMessages,
     noteReviews,
-    visualizations,
     settings: sanitizedSettings,
   };
 
@@ -125,7 +121,7 @@ export async function importDatabase(
 ): Promise<ImportResult> {
   return db.transaction(
     'rw',
-    [db.problems, db.attempts, db.mentorMessages, db.noteReviews, db.visualizations],
+    [db.problems, db.attempts, db.mentorMessages, db.noteReviews],
     async () => {
       if (mode === 'replace') {
         await Promise.all([
@@ -133,7 +129,6 @@ export async function importDatabase(
           db.attempts.clear(),
           db.mentorMessages.clear(),
           db.noteReviews.clear(),
-          db.visualizations.clear(),
         ]);
 
         await Promise.all([
@@ -143,9 +138,6 @@ export async function importDatabase(
             ? db.mentorMessages.bulkAdd(data.mentorMessages)
             : Promise.resolve(),
           data.noteReviews?.length ? db.noteReviews.bulkAdd(data.noteReviews) : Promise.resolve(),
-          data.visualizations?.length
-            ? db.visualizations.bulkAdd(data.visualizations)
-            : Promise.resolve(),
         ]);
 
         return {
@@ -153,7 +145,6 @@ export async function importDatabase(
           importedAttempts: data.attempts?.length || 0,
           importedMentor: data.mentorMessages?.length || 0,
           importedReviews: data.noteReviews?.length || 0,
-          importedVisualizations: data.visualizations?.length || 0,
         };
       }
 
@@ -163,33 +154,28 @@ export async function importDatabase(
         existingAttemptKeys,
         existingMentorKeys,
         existingReviewKeys,
-        existingVisKeys,
       ] = await Promise.all([
         db.problems.toCollection().primaryKeys(),
         db.attempts.toCollection().primaryKeys(),
         db.mentorMessages.toCollection().primaryKeys(),
         db.noteReviews.toCollection().primaryKeys(),
-        db.visualizations.toCollection().primaryKeys(),
       ]);
 
       const problemKeySet = new Set(existingProblemKeys);
       const attemptKeySet = new Set(existingAttemptKeys);
       const mentorKeySet = new Set(existingMentorKeys);
       const reviewKeySet = new Set(existingReviewKeys);
-      const visKeySet = new Set(existingVisKeys);
 
       const newProblems = (data.problems || []).filter((p) => !problemKeySet.has(p.id));
       const newAttempts = (data.attempts || []).filter((a) => !attemptKeySet.has(a.id));
       const newMentor = (data.mentorMessages || []).filter((m) => !mentorKeySet.has(m.id));
       const newReviews = (data.noteReviews || []).filter((r) => !reviewKeySet.has(r.id));
-      const newVisualizations = (data.visualizations || []).filter((v) => !visKeySet.has(v.id));
 
       await Promise.all([
         newProblems.length ? db.problems.bulkAdd(newProblems) : Promise.resolve(),
         newAttempts.length ? db.attempts.bulkAdd(newAttempts) : Promise.resolve(),
         newMentor.length ? db.mentorMessages.bulkAdd(newMentor) : Promise.resolve(),
         newReviews.length ? db.noteReviews.bulkAdd(newReviews) : Promise.resolve(),
-        newVisualizations.length ? db.visualizations.bulkAdd(newVisualizations) : Promise.resolve(),
       ]);
 
       return {
@@ -197,7 +183,6 @@ export async function importDatabase(
         importedAttempts: newAttempts.length,
         importedMentor: newMentor.length,
         importedReviews: newReviews.length,
-        importedVisualizations: newVisualizations.length,
       };
     }
   );

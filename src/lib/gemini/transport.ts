@@ -222,21 +222,21 @@ async function executeSingleRequest<T>(options: GeminiRequestOptions): Promise<T
     }
 
     if (status === 503) {
-      if (cleanModel !== 'gemini-3.5-flash') {
+      if (cleanModel !== 'gemini-1.5-flash') {
         console.warn(
-          `Model "${cleanModel}" returned 503 UNAVAILABLE. Retrying call with gemini-3.5-flash...`
+          `Model "${cleanModel}" returned 503 UNAVAILABLE. Retrying call with gemini-1.5-flash...`
         );
         try {
           return await executeSingleRequest<T>({
             ...options,
-            model: 'gemini-3.5-flash',
+            model: 'gemini-1.5-flash',
           });
         } catch (retryErr) {
-          console.error('Fallback to gemini-3.5-flash failed:', retryErr);
+          console.error('Fallback to gemini-1.5-flash failed:', retryErr);
         }
       }
       throw new GeminiError(
-        `Gemini server is temporarily unavailable or out of capacity for model "${cleanModel}" (503). Try switching to "gemini-3.5-flash" in Settings or retry in a few moments.`,
+        `Gemini server is temporarily unavailable or out of capacity for model "${cleanModel}" (503). Try switching to "gemini-1.5-flash" in Settings or retry in a few moments.`,
         503,
         'UNAVAILABLE'
       );

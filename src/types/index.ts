@@ -95,21 +95,10 @@ export interface NoteReview {
   createdAt: string;
 }
 
-export interface ProblemVisualization {
-  id: string;
-  problemId: string;
-  html: string;
-  explanation: string;
-  model: string;
-  createdAt: string;
-  updatedAt?: string;
-}
-
 export interface Settings {
   key?: string; // Dexie key for singleton row, e.g. 'current'
   geminiApiKey: string;
   model: string; // e.g. 'gemini-flash-lite-latest'
-  visualizeModel?: string; // e.g. 'gemini-2.5-flash' (Flash only, not Lite)
   defaultLanguage: string;
   responseLanguage?: string; // human output language (e.g. English, Hinglish, Nepali+English(Romanized)), default 'English'
   theme: 'light' | 'dark' | 'system';
