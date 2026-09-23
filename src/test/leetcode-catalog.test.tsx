@@ -147,6 +147,7 @@ describe('toProblemFormPrefill — form mapping', () => {
     const stmt = buildCatalogStatement(getLeetCodeEntryByNumber(121)!);
     expect(stmt).toContain('Best Time to Buy and Sell Stock');
     expect(stmt).toContain('https://leetcode.com/problems/best-time-to-buy-and-sell-stock/');
+    expect(stmt).not.toContain('Tip: paste the full problem statement');
   });
 });
 

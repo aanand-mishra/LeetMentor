@@ -4,6 +4,7 @@ import {
   calculateNextReview,
   getProblemReviewStatus,
   isProblemInReviewQueue,
+  isProblemOverdue,
   sortByReviewUrgency,
   MIN_INITIAL_DAYS,
   MAX_INITIAL_DAYS,
@@ -273,7 +274,7 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
       expect(status.isDue).toBe(false);
       expect(status.isOverdue).toBe(false);
       expect(status.daysRemaining).toBe(5);
-      expect(status.statusText).toBe('In 5d');
+      expect(status.statusText).toBe('Revise In 5d');
     });
 
     it('identifies due today problems', () => {
@@ -316,6 +317,61 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
       };
 
       expect(isProblemInReviewQueue(solvedLowConf, baseDate)).toBe(true);
+    });
+
+    it('accurately identifies whether a problem is overdue', () => {
+      const baseProblem: Problem = {
+        id: 'p-overdue-test',
+        number: 10,
+        title: 'Overdue Test',
+        url: null,
+        statement: '',
+        difficulty: 'Medium',
+        topics: [],
+        patterns: [],
+        status: 'Solved',
+        confidence: 4,
+        timeSpentMinutes: 30,
+        hintsUsed: 0,
+        starred: false,
+        userTimeComplexity: null,
+        userSpaceComplexity: null,
+        notes: '',
+        language: 'python',
+        dateAdded: baseDate.toISOString(),
+        dateFirstAttempt: null,
+        dateSolved: baseDate.toISOString(),
+        updatedAt: baseDate.toISOString(),
+      };
+
+      // Past review date => overdue
+      const overdueProblem: Problem = {
+        ...baseProblem,
+        nextReviewDate: subDays(baseDate, 2).toISOString(),
+      };
+      expect(isProblemOverdue(overdueProblem, baseDate)).toBe(true);
+
+      // Due today => not overdue
+      const dueTodayProblem: Problem = {
+        ...baseProblem,
+        nextReviewDate: baseDate.toISOString(),
+      };
+      expect(isProblemOverdue(dueTodayProblem, baseDate)).toBe(false);
+
+      // Future review date => not overdue
+      const futureProblem: Problem = {
+        ...baseProblem,
+        nextReviewDate: addDays(baseDate, 3).toISOString(),
+      };
+      expect(isProblemOverdue(futureProblem, baseDate)).toBe(false);
+
+      // Not solved => not overdue even with past date
+      const unsolvedProblem: Problem = {
+        ...baseProblem,
+        status: 'In Progress',
+        nextReviewDate: subDays(baseDate, 5).toISOString(),
+      };
+      expect(isProblemOverdue(unsolvedProblem, baseDate)).toBe(false);
     });
 
     it('sorts overdue and highly urgent items first', () => {

@@ -8,7 +8,7 @@ import { WelcomeGuideBanner } from '../components/home/WelcomeGuideBanner';
 import { ZeroProblemsEmptyState, NoFilterMatchesEmptyState } from '../components/home/EmptyStates';
 import { useUrlFilters } from '../hooks/useUrlFilters';
 import type { Status, Difficulty } from '../types';
-import { getProblemReviewStatus } from '../utils/reviewScheduler';
+import { getProblemReviewStatus, isProblemOverdue } from '../utils/reviewScheduler';
 
 export const HomePage: React.FC = () => {
   const { filters, page, setFilters, clearFilters } = useUrlFilters();
@@ -61,7 +61,7 @@ export const HomePage: React.FC = () => {
       filters.confidence?.join(','),
       filters.starredOnly,
       filters.reviewQueueOnly,
-      filters.unresolvedReviewOnly,
+      filters.overdueOnly,
       filters.sort,
     ]
   );
@@ -93,6 +93,11 @@ export const HomePage: React.FC = () => {
       const status = getProblemReviewStatus(p);
       return status.isDue;
     }).length;
+  }, [allProblems]);
+
+  // Count problems overdue for spaced repetition revision
+  const overdueCount = useMemo(() => {
+    return allProblems.filter((p) => isProblemOverdue(p)).length;
   }, [allProblems]);
 
   // Handle Star toggle directly on table
@@ -147,6 +152,7 @@ export const HomePage: React.FC = () => {
           allAvailableTopics={allAvailableTopics}
           allAvailablePatterns={allAvailablePatterns}
           dueReviewCount={dueReviewCount}
+          overdueCount={overdueCount}
         />
       )}
 

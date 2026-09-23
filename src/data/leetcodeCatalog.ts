@@ -13574,7 +13574,6 @@ export function buildCatalogStatement(entry: LeetCodeCatalogEntry): string {
     ...(topicPart ? [topicPart] : []),
     '',
     `Full description: ${leetcodeProblemUrl(entry.slug)}`,
-    'Tip: paste the full problem statement here to improve mentor quality.',
   ];
   return linesOut.join('\n');
 }

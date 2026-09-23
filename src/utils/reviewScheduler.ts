@@ -335,6 +335,21 @@ export function getProblemReviewStatus(
   }
 
   const reviewDate = parseISO(nextReviewDateStr);
+  if (!nextReviewDateStr || isNaN(reviewDate.getTime())) {
+    return {
+      isScheduled: false,
+      isDue: false,
+      isOverdue: false,
+      daysRemaining: Infinity,
+      daysOverdue: 0,
+      statusText: 'No Review Scheduled',
+      badgeClass: 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
+      urgencyScore: 0,
+      stage: 'learning',
+      intervalDays: 0,
+      nextReviewDate: '',
+    };
+  }
   const today = startOfDay(currentDate);
   const targetDay = startOfDay(reviewDate);
 
@@ -376,7 +391,7 @@ export function getProblemReviewStatus(
     badgeClass =
       'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800';
   } else {
-    statusText = `In ${diffDays}d`;
+    statusText = `Revise In ${diffDays}d`;
     badgeClass =
       'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/80 dark:text-slate-300 dark:border-slate-700';
   }
@@ -408,6 +423,16 @@ export function isProblemInReviewQueue(problem: Problem, currentDate: Date = new
   if (problem.status !== 'Solved') return false;
   const status = getProblemReviewStatus(problem, 1, currentDate);
   return status.isDue || (problem.confidence !== null && problem.confidence <= 3);
+}
+
+/**
+ * Returns whether a problem is overdue for review:
+ * Problem is Solved AND its scheduled review date has passed (diffDays < 0).
+ */
+export function isProblemOverdue(problem: Problem, currentDate: Date = new Date()): boolean {
+  if (problem.status !== 'Solved') return false;
+  const status = getProblemReviewStatus(problem, 1, currentDate);
+  return status.isOverdue;
 }
 
 /**

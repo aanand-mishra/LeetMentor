@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Star, AlertCircle, Bookmark, ChevronDown } from 'lucide-react';
+import { Search, X, Star, Clock, Bookmark, ChevronDown } from 'lucide-react';
 import type { Difficulty, Status, ProblemFilterParams, SortOption } from '../../types';
 
 interface Props {
@@ -9,6 +9,7 @@ interface Props {
   allAvailableTopics: string[];
   allAvailablePatterns: string[];
   dueReviewCount?: number;
+  overdueCount?: number;
 }
 
 export const FilterPanel: React.FC<Props> = ({
@@ -18,6 +19,7 @@ export const FilterPanel: React.FC<Props> = ({
   allAvailableTopics,
   allAvailablePatterns,
   dueReviewCount = 0,
+  overdueCount = 0,
 }) => {
   const [searchInput, setSearchInput] = useState(filters.query || '');
   const [topicDropdownOpen, setTopicDropdownOpen] = useState(false);
@@ -98,7 +100,7 @@ export const FilterPanel: React.FC<Props> = ({
     (filters.confidence && filters.confidence.length > 0) ||
     Boolean(filters.starredOnly) ||
     Boolean(filters.reviewQueueOnly) ||
-    Boolean(filters.unresolvedReviewOnly);
+    Boolean(filters.overdueOnly);
 
   const filteredTopicList = allAvailableTopics.filter((t) =>
     t.toLowerCase().includes(topicSearch.toLowerCase().trim())
@@ -219,17 +221,32 @@ export const FilterPanel: React.FC<Props> = ({
             <button
               type="button"
               onClick={() =>
-                onFilterChange({ unresolvedReviewOnly: !filters.unresolvedReviewOnly })
+                onFilterChange({ overdueOnly: !filters.overdueOnly })
               }
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border font-medium transition-all cursor-pointer ${
-                filters.unresolvedReviewOnly
-                  ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                filters.overdueOnly
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
                   : 'bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
-              title="Latest attempt received a revise verdict"
+              title="Problems whose scheduled review date has passed"
             >
-              <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-              Unresolved Review
+              <Clock
+                className={`w-3.5 h-3.5 ${
+                  filters.overdueOnly ? 'text-white' : 'text-rose-500'
+                }`}
+              />
+              <span>Overdue</span>
+              {overdueCount > 0 && (
+                <span
+                  className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                    filters.overdueOnly
+                      ? 'bg-white text-rose-700'
+                      : 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300'
+                  }`}
+                >
+                  {overdueCount} overdue
+                </span>
+              )}
             </button>
           </div>
 
@@ -512,10 +529,10 @@ export const FilterPanel: React.FC<Props> = ({
             </span>
           )}
 
-          {filters.unresolvedReviewOnly && (
+          {filters.overdueOnly && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200">
-              Unresolved Review
-              <button onClick={() => onFilterChange({ unresolvedReviewOnly: false })}>
+              Overdue
+              <button onClick={() => onFilterChange({ overdueOnly: false })}>
                 <X className="w-3 h-3" />
               </button>
             </span>

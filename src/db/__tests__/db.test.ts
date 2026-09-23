@@ -510,5 +510,63 @@ describe('Data Layer & Repositories', () => {
       expect(reviewQueueItems.length).toBe(1);
       expect(reviewQueueItems[0].title).toBe('Symmetric Tree');
     });
+
+    it('filters overdue reviews accurately', async () => {
+      const pastDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+      const futureDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Problem 1: Solved and next review date is in the past => overdue
+      await problemsRepo.create({
+        number: 301,
+        title: 'Overdue Problem',
+        url: null,
+        statement: '',
+        difficulty: 'Medium',
+        topics: ['Array'],
+        patterns: [],
+        status: 'Solved',
+        confidence: 4,
+        timeSpentMinutes: 25,
+        hintsUsed: 0,
+        starred: false,
+        userTimeComplexity: null,
+        userSpaceComplexity: null,
+        notes: '',
+        language: 'python',
+        dateFirstAttempt: null,
+        dateSolved: pastDate,
+      });
+      // Set explicit nextReviewDate in past
+      const p1 = (await problemsRepo.getByNumber(301))!;
+      await problemsRepo.update(p1.id, { nextReviewDate: pastDate });
+
+      // Problem 2: Solved and next review date is in the future => not overdue
+      await problemsRepo.create({
+        number: 302,
+        title: 'Future Problem',
+        url: null,
+        statement: '',
+        difficulty: 'Medium',
+        topics: ['Array'],
+        patterns: [],
+        status: 'Solved',
+        confidence: 4,
+        timeSpentMinutes: 25,
+        hintsUsed: 0,
+        starred: false,
+        userTimeComplexity: null,
+        userSpaceComplexity: null,
+        notes: '',
+        language: 'python',
+        dateFirstAttempt: null,
+        dateSolved: new Date().toISOString(),
+      });
+      const p2 = (await problemsRepo.getByNumber(302))!;
+      await problemsRepo.update(p2.id, { nextReviewDate: futureDate });
+
+      const overdueItems = await problemsRepo.list({ overdueOnly: true });
+      expect(overdueItems.length).toBe(1);
+      expect(overdueItems[0].title).toBe('Overdue Problem');
+    });
   });
 });

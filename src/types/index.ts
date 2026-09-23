@@ -200,7 +200,7 @@ export interface ProblemFilterParams {
   confidence?: (1 | 2 | 3 | 4 | 5 | 'unrated')[];
   starredOnly?: boolean;
   reviewQueueOnly?: boolean;
-  unresolvedReviewOnly?: boolean;
+  overdueOnly?: boolean;
   sort?: SortOption;
 }
 

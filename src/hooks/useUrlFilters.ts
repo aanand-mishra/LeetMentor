@@ -33,7 +33,7 @@ export function useUrlFilters() {
 
     const starredOnly = searchParams.get('starred') === 'true';
     const reviewQueueOnly = searchParams.get('reviewQueue') === 'true';
-    const unresolvedReviewOnly = searchParams.get('unresolved') === 'true';
+    const overdueOnly = searchParams.get('overdue') === 'true';
     const sort = (searchParams.get('sort') as SortOption) || undefined;
 
     return {
@@ -45,7 +45,7 @@ export function useUrlFilters() {
       confidence,
       starredOnly,
       reviewQueueOnly,
-      unresolvedReviewOnly,
+      overdueOnly,
       sort,
     };
   }, [searchParams]);
@@ -89,8 +89,8 @@ export function useUrlFilters() {
       if (merged.reviewQueueOnly) {
         params.set('reviewQueue', 'true');
       }
-      if (merged.unresolvedReviewOnly) {
-        params.set('unresolved', 'true');
+      if (merged.overdueOnly) {
+        params.set('overdue', 'true');
       }
       if (merged.sort && merged.sort !== 'dateAdded_desc') {
         params.set('sort', merged.sort);

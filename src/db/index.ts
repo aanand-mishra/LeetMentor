@@ -15,6 +15,7 @@ import { generateUuid } from '../utils/uuid';
 import {
   calculateNextReview,
   isProblemInReviewQueue,
+  isProblemOverdue,
   sortByReviewUrgency,
 } from '../utils/reviewScheduler';
 
@@ -481,29 +482,14 @@ export const problemsRepo = {
       items = items.filter((p) => isProblemInReviewQueue(p));
     }
 
-    // Has unresolved review (latest attempt verdict is 'revise')
-    if (params.unresolvedReviewOnly) {
-      const problemIdsWithUnresolved = new Set<string>();
-      const allAttempts = await db.attempts.toArray();
-      // Group by problemId and find latest
-      const latestAttemptsByProblem = new Map<string, Attempt>();
-      for (const att of allAttempts) {
-        const curr = latestAttemptsByProblem.get(att.problemId);
-        if (!curr || att.attemptNumber > curr.attemptNumber) {
-          latestAttemptsByProblem.set(att.problemId, att);
-        }
-      }
-      for (const [probId, att] of latestAttemptsByProblem.entries()) {
-        if (att.review && att.review.verdict === 'revise') {
-          problemIdsWithUnresolved.add(probId);
-        }
-      }
-      items = items.filter((p) => problemIdsWithUnresolved.has(p.id));
+    // Overdue only: scheduled review date has passed
+    if (params.overdueOnly) {
+      items = items.filter((p) => isProblemOverdue(p));
     }
 
-    // 3. Sorting (Default review queue sort: reviewUrgency_desc, else dateAdded_desc)
+    // 3. Sorting (Default review queue/overdue sort: reviewUrgency_desc, else dateAdded_desc)
     const sort =
-      params.reviewQueueOnly && !params.sort
+      (params.reviewQueueOnly || params.overdueOnly) && !params.sort
         ? 'reviewUrgency_desc'
         : params.sort || 'dateAdded_desc';
 
