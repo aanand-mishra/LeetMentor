@@ -154,7 +154,6 @@ export const ProblemDetailPage: React.FC = () => {
         problem={problem as Problem}
         onProblemUpdated={handleProblemUpdated}
         onOpenConfidenceModal={() => setConfidenceModalOpen(true)}
-        onReviseNow={() => setIsStartRevisionOpen(true)}
       />
 
       {/* Tab Strip (FR-3) */}

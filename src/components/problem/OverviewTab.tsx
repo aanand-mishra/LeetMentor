@@ -13,7 +13,6 @@ import {
 import { format, parseISO } from 'date-fns';
 import type { Problem, Attempt, MentorMessage, NoteReview } from '../../types';
 import { getProblemReviewStatus } from '../../utils/reviewScheduler';
-import { useToast } from '../../hooks/useToast';
 
 interface Props {
   problem: Problem;
@@ -28,9 +27,8 @@ export const OverviewTab: React.FC<Props> = ({
   attempts,
   mentorMessages,
   noteReviews,
-  onProblemUpdated,
+  // onProblemUpdated kept in Props for API compatibility; no longer used here
 }) => {
-  const toast = useToast();
   const [statementExpanded, setStatementExpanded] = useState(false);
 
   // Revision scheduling status (replaces editable Time Spent row)
