@@ -95,34 +95,6 @@ export const RevisionsTab: React.FC<Props> = ({
 
   return (
     <div className="space-y-6">
-      {/* Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs transition-all">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2.5 tracking-tight">
-            <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400">
-              <RotateCcw className="w-4 h-4" />
-            </div>
-            <span>Revision History &amp; Deep Analytics</span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 shadow-xs">
-              {revisions.length} {revisions.length === 1 ? 'Snapshot' : 'Snapshots'}
-            </span>
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-            Intelligent tracking of your recall speed, independence, and cognitive mastery across
-            practice sessions
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setIsStartModalOpen(true)}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white shadow-xs transition-all cursor-pointer shrink-0"
-        >
-          <RotateCcw className="w-4 h-4" />
-          <span>Revise Now (Archive &amp; Start Clean)</span>
-        </button>
-      </div>
-
       {/* Analytics Summary Cards (when at least 1 revision exists) */}
       {revisions.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -260,7 +232,7 @@ export const RevisionsTab: React.FC<Props> = ({
               className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all cursor-pointer"
             >
               <Sparkles className="w-4 h-4" />
-              <span>Archive Current State & Start 1st Revision</span>
+              <span>Archive Current State & Start Revision</span>
             </button>
           </div>
         </div>

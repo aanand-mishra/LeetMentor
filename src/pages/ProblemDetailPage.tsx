@@ -158,7 +158,8 @@ export const ProblemDetailPage: React.FC = () => {
       />
 
       {/* Tab Strip (FR-3) */}
-      <div className="border-b border-slate-200/90 dark:border-slate-800 flex items-center space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar pb-px">
+      <div className="border-b border-slate-200/90 dark:border-slate-800 flex items-center gap-2">
+        <div className="flex items-center space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar pb-px flex-1 min-w-0">
         {/* Overview Tab */}
         <button
           type="button"
@@ -263,6 +264,18 @@ export const ProblemDetailPage: React.FC = () => {
           ) : (
             <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
           )}
+        </button>
+        </div>
+
+        {/* Revise Now — right-aligned beside the tab strip */}
+        <button
+          type="button"
+          onClick={() => setIsStartRevisionOpen(true)}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-[0.98] shrink-0 self-center mb-1"
+          title="Archive current session into history and test again with a clean slate"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Revise Now</span>
         </button>
       </div>
 

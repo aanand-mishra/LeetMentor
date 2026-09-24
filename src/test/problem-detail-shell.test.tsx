@@ -179,7 +179,7 @@ describe('Phase 5 — Problem Detail Page Shell & Hash Routing', () => {
     });
   });
 
-  it('allows editing Time Spent directly in Session Information on the Overview tab', async () => {
+  it('allows editing Time Spent via the header input and shows Revision Required on Overview', async () => {
     const user = userEvent.setup();
     const problem = await problemsRepo.create({
       number: 75,
@@ -212,29 +212,26 @@ describe('Phase 5 — Problem Detail Page Shell & Hash Routing', () => {
       </MemoryRouter>
     );
 
-    // Initial state shows — for Time Spent
+    // Header shows the Time input next to Status
     await waitFor(() => {
-      expect(screen.getByText('Session Information')).toBeInTheDocument();
+      expect(screen.getByLabelText(/Time spent in minutes/i)).toBeInTheDocument();
     });
 
-    // Click edit button
-    const editTimeBtn = screen.getByRole('button', { name: /Edit time spent/i });
-    await user.click(editTimeBtn);
-
-    // Input field appears
-    const input = screen.getByLabelText(/Edit time spent in minutes/i);
-    expect(input).toBeInTheDocument();
-
-    // Type 45 and click save
+    // Type 45 and blur to save
+    const input = screen.getByLabelText(/Time spent in minutes/i);
     await user.type(input, '45');
-    const saveBtn = screen.getByRole('button', { name: /Save time spent/i });
-    await user.click(saveBtn);
+    await user.tab();
 
-    // Displays 45 mins and persists to IndexedDB
+    // Persists to IndexedDB
     await waitFor(async () => {
-      expect(screen.getByText('45 mins')).toBeInTheDocument();
       const stored = await problemsRepo.getById(problem.id);
       expect(stored?.timeSpentMinutes).toBe(45);
+    });
+
+    // Session Information shows the Revision Required row instead of Time Spent
+    await waitFor(() => {
+      expect(screen.getByText('Session Information')).toBeInTheDocument();
+      expect(screen.getByText(/Revision Required:/i)).toBeInTheDocument();
     });
   });
 });

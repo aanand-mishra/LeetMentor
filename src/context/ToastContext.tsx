@@ -38,7 +38,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const id = generateUuid();
         setTimeout(() => {
           removeToast(id);
-        }, 4500);
+        }, 2000);
         return [...prev, { id, type, message }];
       });
     },

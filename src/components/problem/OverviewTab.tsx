@@ -3,21 +3,17 @@ import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import {
   ChevronDown,
   ChevronUp,
-  Clock,
+  RotateCcw,
   Calendar,
   CheckCircle,
   Code,
   Lightbulb,
   BookOpen,
-  Edit2,
-  Check,
-  X,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import type { Problem, Attempt, MentorMessage, NoteReview } from '../../types';
-import { problemsRepo } from '../../db';
+import { getProblemReviewStatus } from '../../utils/reviewScheduler';
 import { useToast } from '../../hooks/useToast';
-import { ReviewScheduleCard } from './ReviewScheduleCard';
 
 interface Props {
   problem: Problem;
@@ -37,62 +33,21 @@ export const OverviewTab: React.FC<Props> = ({
   const toast = useToast();
   const [statementExpanded, setStatementExpanded] = useState(false);
 
-  // Editable Time Spent in Session Information
-  const [isEditingTimeSpent, setIsEditingTimeSpent] = useState(false);
-  const [timeSpentInput, setTimeSpentInput] = useState<string>(
-    problem.timeSpentMinutes !== null && problem.timeSpentMinutes !== undefined
-      ? String(problem.timeSpentMinutes)
-      : ''
-  );
-  const [isSavingTime, setIsSavingTime] = useState(false);
-
-  const handleStartTimeEdit = () => {
-    setTimeSpentInput(
-      problem.timeSpentMinutes !== null && problem.timeSpentMinutes !== undefined
-        ? String(problem.timeSpentMinutes)
-        : ''
-    );
-    setIsEditingTimeSpent(true);
-  };
-
-  const handleSaveTimeSpent = async () => {
-    setIsSavingTime(true);
-    try {
-      const trimmed = timeSpentInput.trim();
-      let newTime: number | null = null;
-      if (trimmed) {
-        const parsed = parseInt(trimmed, 10);
-        if (!isNaN(parsed) && parsed >= 0) {
-          newTime = parsed;
-        } else {
-          toast.error('Please enter a valid positive number for minutes.');
-          setIsSavingTime(false);
-          return;
-        }
-      }
-
-      await problemsRepo.update(problem.id, { timeSpentMinutes: newTime });
-      setIsEditingTimeSpent(false);
-      onProblemUpdated();
-      toast.success(
-        newTime !== null ? `Time spent updated to ${newTime} mins` : 'Time spent cleared'
-      );
-    } catch (err) {
-      console.error('Failed to update time spent:', err);
-      toast.error('Failed to update time spent');
-    } finally {
-      setIsSavingTime(false);
-    }
-  };
-
-  const handleCancelTimeEdit = () => {
-    setIsEditingTimeSpent(false);
-    setTimeSpentInput(
-      problem.timeSpentMinutes !== null && problem.timeSpentMinutes !== undefined
-        ? String(problem.timeSpentMinutes)
-        : ''
-    );
-  };
+  // Revision scheduling status (replaces editable Time Spent row)
+  const reviewStatus = getProblemReviewStatus(problem, attempts.length);
+  const revisionLabel = !reviewStatus.isScheduled
+    ? '—'
+    : reviewStatus.daysRemaining > 0
+      ? `in ${reviewStatus.daysRemaining}d`
+      : reviewStatus.daysRemaining === 0
+        ? 'Today'
+        : `Overdue by ${reviewStatus.daysOverdue}d`;
+  const revisionValueClass =
+    reviewStatus.isScheduled && reviewStatus.daysRemaining < 0
+      ? 'font-bold text-rose-600 dark:text-rose-400'
+      : reviewStatus.isScheduled && reviewStatus.daysRemaining <= 1
+        ? 'font-bold text-amber-600 dark:text-amber-400'
+        : 'font-semibold text-slate-800 dark:text-slate-200';
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '—';
@@ -140,16 +95,6 @@ export const OverviewTab: React.FC<Props> = ({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left 2 Cols: Statement & Tags */}
       <div className="lg:col-span-2 space-y-6">
-        {/* Intelligent Review Schedule (DSA-SRS) */}
-        {problem.status === 'Solved' && (
-          <ReviewScheduleCard
-            problem={problem}
-            attemptsCount={attempts.length}
-            attempts={attempts}
-            onProblemUpdated={onProblemUpdated}
-          />
-        )}
-
         {/* Problem Statement Card */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -256,71 +201,9 @@ export const OverviewTab: React.FC<Props> = ({
           <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
             <div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">
               <span className="flex items-center gap-1.5 text-slate-500 font-medium">
-                <Clock className="w-3.5 h-3.5 text-indigo-500" /> Time Spent:
+                <RotateCcw className="w-3.5 h-3.5 text-indigo-500" /> Revision Required:
               </span>
-              {isEditingTimeSpent ? (
-                <div className="flex items-center gap-1.5">
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="0"
-                      autoFocus
-                      value={timeSpentInput}
-                      onChange={(e) => setTimeSpentInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSaveTimeSpent();
-                        if (e.key === 'Escape') handleCancelTimeEdit();
-                      }}
-                      placeholder="mins"
-                      className="w-20 px-2.5 py-1 text-xs font-mono bg-slate-50 dark:bg-slate-950 border border-indigo-500 rounded-lg outline-none text-slate-900 dark:text-slate-100 pr-6 shadow-xs"
-                      aria-label="Edit time spent in minutes"
-                    />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">
-                      m
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={isSavingTime}
-                    onClick={handleSaveTimeSpent}
-                    className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-lg transition-colors cursor-pointer"
-                    title="Save time spent"
-                    aria-label="Save time spent"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCancelTimeEdit}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                    title="Cancel edit"
-                    aria-label="Cancel edit"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 group">
-                  <span
-                    onClick={handleStartTimeEdit}
-                    className="font-bold cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                    title="Click to edit time spent"
-                  >
-                    {problem.timeSpentMinutes !== null && problem.timeSpentMinutes !== undefined
-                      ? `${problem.timeSpentMinutes} mins`
-                      : '—'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleStartTimeEdit}
-                    className="p-1 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors opacity-80 group-hover:opacity-100 cursor-pointer"
-                    title="Edit time spent"
-                    aria-label="Edit time spent"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
+              <span className={revisionValueClass}>{revisionLabel}</span>
             </div>
 
             <div className="flex items-center justify-between py-1.5 border-b border-slate-100 dark:border-slate-800">

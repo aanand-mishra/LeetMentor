@@ -310,7 +310,7 @@ export const problemsRepo = {
     const existingRevisions = await db.revisions.where('problemId').equals(id).toArray();
 
     const now = new Date().toISOString();
-    const revisionNumber = existingRevisions.length + 1;
+    const revisionNumber = existingRevisions.length;
 
     const maxHintUsed = mentorMessages.reduce((max, m) => Math.max(max, m.level), 0);
     const hintsUsed = Math.max(problem.hintsUsed || 0, maxHintUsed) as 0 | 1 | 2 | 3 | 4;

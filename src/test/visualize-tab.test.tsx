@@ -160,8 +160,6 @@ describe('Visualize Tab & Prompt Generator', () => {
         </ToastProvider>
       );
 
-      expect(screen.getByText('Interactive Visualization Prompt Generator')).toBeInTheDocument();
-      expect(screen.getByTestId('copy-prompt-btn')).toBeInTheDocument();
       expect(screen.getByTestId('vis-prog-lang-select')).toBeInTheDocument();
       expect(screen.getByTestId('vis-human-lang-select')).toBeInTheDocument();
       expect(screen.getByTestId('prompt-preview')).toBeInTheDocument();
@@ -248,12 +246,12 @@ describe('Visualize Tab & Prompt Generator', () => {
         </ToastProvider>
       );
 
-      const copyBtn = screen.getByTestId('copy-prompt-btn');
+      const copyBtn = screen.getByRole('button', { name: /copy prompt/i });
       await user.click(copyBtn);
 
       expect(writeTextMock).toHaveBeenCalledTimes(1);
       expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('1. Two Sum'));
-      expect(await screen.findByText('Copied to Clipboard!')).toBeInTheDocument();
+      expect(await screen.findByTitle('Copy prompt')).toBeInTheDocument();
     });
 
     it('shows statement missing warning when problem has no statement', async () => {
@@ -314,7 +312,6 @@ describe('Visualize Tab & Prompt Generator', () => {
         expect(screen.getByText('Trapping Rain Water')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Interactive Visualization Prompt Generator')).toBeInTheDocument();
       expect(screen.getByTestId('prompt-preview').textContent).toContain('42. Trapping Rain Water');
     });
   });

@@ -106,7 +106,7 @@ export interface NoteReview {
 export interface RevisionRecord {
   id: string; // uuid v4
   problemId: string;
-  revisionNumber: number; // 1-indexed (e.g. Revision #1, #2, #3...)
+  revisionNumber: number; // 0-indexed (e.g. Revision #0, #1, #2...)
   title?: string;
   startedAt: string; // ISO 8601
   completedAt: string; // ISO 8601

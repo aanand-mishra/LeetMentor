@@ -52,7 +52,7 @@ describe('Revisions & Intelligent Record Keeping', () => {
     const { problem: resetProblem, revision } = await problemsRepo.startNewRevision(problem.id);
 
     // Verify Revision Record
-    expect(revision.revisionNumber).toBe(1);
+    expect(revision.revisionNumber).toBe(0);
     expect(revision.problemId).toBe(problem.id);
     expect(revision.attemptsCount).toBe(1);
     expect(revision.attempts).toHaveLength(1);
@@ -111,7 +111,7 @@ describe('Revisions & Intelligent Record Keeping', () => {
 
     // Archive Rev 1
     const { revision: rev1 } = await problemsRepo.startNewRevision(problem.id);
-    expect(rev1.revisionNumber).toBe(1);
+    expect(rev1.revisionNumber).toBe(0);
     expect(rev1.attemptsCount).toBe(2);
     expect(rev1.timeSpentMinutes).toBe(30);
 
@@ -128,7 +128,7 @@ describe('Revisions & Intelligent Record Keeping', () => {
 
     // Archive Rev 2
     const { revision: rev2 } = await problemsRepo.startNewRevision(problem.id);
-    expect(rev2.revisionNumber).toBe(2);
+    expect(rev2.revisionNumber).toBe(1);
     expect(rev2.attemptsCount).toBe(1);
     expect(rev2.timeSpentMinutes).toBe(10);
     expect(rev2.confidence).toBe(5);
@@ -136,8 +136,8 @@ describe('Revisions & Intelligent Record Keeping', () => {
     // List returns newest first
     const revs = await revisionsRepo.listForProblem(problem.id);
     expect(revs).toHaveLength(2);
-    expect(revs[0].revisionNumber).toBe(2);
-    expect(revs[1].revisionNumber).toBe(1);
+    expect(revs[0].revisionNumber).toBe(1);
+    expect(revs[1].revisionNumber).toBe(0);
   });
 
   it('cascades deletion of revisions when problem is deleted', async () => {

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Copy,
   Check,
-  Sparkles,
   ExternalLink,
   Code2,
   Globe,
@@ -126,50 +125,6 @@ export const VisualizeTab: React.FC<Props> = ({ problem, latestAttempt }) => {
       {/* Warning if problem statement is missing */}
       {!problem.statement?.trim() && <StatementMissingWarning problemId={problem.id} />}
 
-      {/* Header Banner */}
-      <div className="p-5 sm:p-6 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-800/60 shadow-xs">
-              <Sparkles className="w-4 h-4" />
-            </span>
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-              Interactive Visualization Prompt Generator
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
-            Generate a precision-engineered prompt customized to your preferred programming language
-            and human language. Paste it into any frontier LLM (Claude, ChatGPT, Gemini, DeepSeek)
-            to obtain an interactive, single-file HTML visualization app.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={handleCopyPrompt}
-            data-testid="copy-prompt-btn"
-            className={`px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all shadow-xs active:scale-[0.98] cursor-pointer ${
-              copied
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-            }`}
-          >
-            {copied ? (
-              <>
-                <Check className="w-4 h-4" />
-                <span>Copied to Clipboard!</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4" />
-                <span>Copy Prompt</span>
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
       {/* Language & Customization Selectors */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs">
         {/* Programming Language */}
@@ -273,18 +228,6 @@ export const VisualizeTab: React.FC<Props> = ({ problem, latestAttempt }) => {
               ~{wordCount} words
             </span>
           </div>
-          <button
-            type="button"
-            onClick={handleCopyPrompt}
-            className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
-          >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 text-emerald-500" />
-            ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
-            <span>{copied ? 'Copied!' : 'Copy to clipboard'}</span>
-          </button>
         </div>
 
         <div className="relative rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-900 text-slate-200 overflow-hidden shadow-xs">
@@ -302,6 +245,7 @@ export const VisualizeTab: React.FC<Props> = ({ problem, latestAttempt }) => {
               onClick={handleCopyPrompt}
               className="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
               title="Copy prompt"
+              aria-label="Copy prompt"
             >
               {copied ? (
                 <Check className="w-4 h-4 text-emerald-400" />
@@ -387,8 +331,8 @@ export const VisualizeTab: React.FC<Props> = ({ problem, latestAttempt }) => {
             <strong>Human Language</strong> for the mentor explanations.
           </li>
           <li>
-            Click <strong className="text-indigo-600 dark:text-indigo-400">Copy Prompt</strong> to
-            copy the ready-to-run prompt.
+            Click the <strong className="text-indigo-600 dark:text-indigo-400">copy icon</strong> in
+            the prompt header to copy the ready-to-run prompt.
           </li>
           <li>Paste the prompt into Claude, ChatGPT, Gemini, or DeepSeek.</li>
           <li>

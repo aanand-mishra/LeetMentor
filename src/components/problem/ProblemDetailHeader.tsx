@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ExternalLink, Star, Edit2, Trash2, AlertTriangle, RotateCcw } from 'lucide-react';
+import { ExternalLink, Star, Edit2, Trash2, AlertTriangle } from 'lucide-react';
 import type { Problem, Status } from '../../types';
 import { DifficultyBadge } from '../common/Badges';
 import { ConfidenceDots } from '../common/ConfidenceDots';
@@ -12,14 +12,12 @@ interface Props {
   problem: Problem;
   onProblemUpdated: () => void;
   onOpenConfidenceModal?: () => void;
-  onReviseNow?: () => void;
 }
 
 export const ProblemDetailHeader: React.FC<Props> = ({
   problem,
   onProblemUpdated,
   onOpenConfidenceModal,
-  onReviseNow,
 }) => {
   const navigate = useNavigate();
   const toast = useToast();
@@ -27,6 +25,46 @@ export const ProblemDetailHeader: React.FC<Props> = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showManualSolvedConfirm, setShowManualSolvedConfirm] = useState(false);
+
+  // Time Spent quick-edit input
+  const timeSpentDisplay =
+    problem.timeSpentMinutes !== null && problem.timeSpentMinutes !== undefined
+      ? String(problem.timeSpentMinutes)
+      : '';
+  const [timeSpentInput, setTimeSpentInput] = useState<string>(timeSpentDisplay);
+
+  // Keep input in sync when the problem refreshes
+  useEffect(() => {
+    setTimeSpentInput(timeSpentDisplay);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [problem.id, problem.timeSpentMinutes]);
+
+  const commitTimeSpent = async () => {
+    const trimmed = timeSpentInput.trim();
+    if (trimmed === timeSpentDisplay) return;
+
+    let newTime: number | null = null;
+    if (trimmed) {
+      const parsed = parseInt(trimmed, 10);
+      if (isNaN(parsed) || parsed < 0) {
+        toast.error('Please enter a valid positive number for minutes.');
+        setTimeSpentInput(timeSpentDisplay);
+        return;
+      }
+      newTime = parsed;
+    }
+
+    try {
+      await problemsRepo.update(problem.id, { timeSpentMinutes: newTime });
+      toast.success(
+        newTime !== null ? `Time spent updated to ${newTime} mins` : 'Time spent cleared'
+      );
+      onProblemUpdated();
+    } catch (err) {
+      console.error('Failed to update time spent:', err);
+      toast.error('Failed to update time spent');
+    }
+  };
 
   // Toggle Star
   const handleToggleStar = async () => {
@@ -185,6 +223,37 @@ export const ProblemDetailHeader: React.FC<Props> = ({
               </select>
             </div>
 
+            {/* Time Spent Input */}
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/70 p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700">
+              <label
+                htmlFor="detail-time-spent"
+                className="text-xs font-bold uppercase tracking-wider text-slate-400 pl-1"
+              >
+                Time:
+              </label>
+              <input
+                id="detail-time-spent"
+                type="number"
+                min="0"
+                value={timeSpentInput}
+                onChange={(e) => setTimeSpentInput(e.target.value)}
+                onBlur={commitTimeSpent}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    (e.target as HTMLInputElement).blur();
+                  }
+                  if (e.key === 'Escape') {
+                    setTimeSpentInput(timeSpentDisplay);
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                placeholder="0"
+                aria-label="Time spent in minutes"
+                className="w-14 px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none shadow-xs"
+              />
+              <span className="text-xs font-medium text-slate-400 pr-1">mins</span>
+            </div>
+
             {/* Confidence Controls */}
             <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/70 rounded-xl border border-slate-200/80 dark:border-slate-700">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -197,19 +266,6 @@ export const ProblemDetailHeader: React.FC<Props> = ({
                 size="md"
               />
             </div>
-
-            {/* Revise Now Button */}
-            {onReviseNow && (
-              <button
-                type="button"
-                onClick={onReviseNow}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/70 dark:hover:bg-indigo-900/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/80 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs active:scale-[0.98]"
-                title="Archive current session into history and test again with a clean slate"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Revise Now</span>
-              </button>
-            )}
 
             {/* Edit & Delete Action Buttons */}
             <div className="flex items-center gap-1 pl-1">
