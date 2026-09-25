@@ -217,7 +217,7 @@ export const ProblemForm: React.FC<Props> = ({
       className="space-y-6 max-w-3xl"
     >
       {/* Top Header & Breadcrumb Nav */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-slate-800">
+      <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800">
         <Link
           to={cancelHref}
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 transition-colors"
@@ -225,9 +225,19 @@ export const ProblemForm: React.FC<Props> = ({
           <ArrowLeft className="w-4 h-4" />
           <span>Cancel &amp; return</span>
         </Link>
-        <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-          Tip: Press Ctrl+Enter to save
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-slate-400 font-mono hidden md:inline">
+            Tip: Press Ctrl+Enter to save or click
+          </span>
+          <button
+            type="submit"
+            data-testid="submit-problem-btn-header"
+            disabled={isSubmitting}
+            className="px-4 py-2 text-sm font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+          >
+            {isSubmitting ? 'Saving...' : submitButtonText}
+          </button>
+        </div>
       </div>
 
       {/* Catalog Quick Picker */}
