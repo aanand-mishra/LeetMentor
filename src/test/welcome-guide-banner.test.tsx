@@ -28,7 +28,7 @@ describe('Welcome and Quick Start Guide Banner', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Welcome to Leetcode DSA Tracker/i)).toBeInTheDocument();
+      expect(screen.getByText(/Welcome to LeetMentor/i)).toBeInTheDocument();
     });
 
     // Verify key guide contents
@@ -61,7 +61,9 @@ describe('Welcome and Quick Start Guide Banner', () => {
       expect(screen.getByText(/Start tracking your Leetcode practice/i)).toBeInTheDocument();
     });
 
-    expect(screen.queryByText(/Welcome to Leetcode DSA Tracker/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Welcome to LeetMentor/i)
+    ).not.toBeInTheDocument();
   });
 
   it('allows user to dismiss the banner, persisting dismissal in sessionStorage', async () => {
@@ -78,14 +80,16 @@ describe('Welcome and Quick Start Guide Banner', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Welcome to Leetcode DSA Tracker/i)).toBeInTheDocument();
+      expect(screen.getByText(/Welcome to LeetMentor/i)).toBeInTheDocument();
     });
 
     const dismissButton = screen.getByRole('button', { name: /Dismiss guide/i });
     await user.click(dismissButton);
 
     await waitFor(() => {
-      expect(screen.queryByText(/Welcome to Leetcode DSA Tracker/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Welcome to LeetMentor/i)
+      ).not.toBeInTheDocument();
     });
 
     expect(sessionStorage.getItem('dsa_welcome_banner_dismissed')).toBe('true');
@@ -110,7 +114,7 @@ describe('Welcome and Quick Start Guide Banner', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Welcome to Leetcode DSA Tracker/i)).toBeInTheDocument();
+      expect(screen.getByText(/Welcome to LeetMentor/i)).toBeInTheDocument();
     });
   });
 
@@ -136,6 +140,8 @@ describe('Welcome and Quick Start Guide Banner', () => {
     });
 
     // The banner should NOT re-appear
-    expect(screen.queryByText(/Welcome to Leetcode DSA Tracker/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Welcome to LeetMentor/i)
+    ).not.toBeInTheDocument();
   });
 });

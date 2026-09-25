@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight, Clock, RotateCcw } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import type { Problem } from '../../types';
 import { DifficultyBadge, StatusBadge, UnassistedBadge } from '../common/Badges';
@@ -63,7 +63,7 @@ export const ProblemTable: React.FC<Props> = ({
               <th className="w-28 px-3 py-3.5">Status</th>
               <th className="w-36 px-3 py-3.5">Confidence</th>
               <th className="w-28 px-3 py-3.5 text-center">Time Spent</th>
-              <th className="w-32 px-4 py-3.5 text-right">Last Activity</th>
+              <th className="w-36 px-4 py-3.5 text-right">Last Activity</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -188,9 +188,21 @@ export const ProblemTable: React.FC<Props> = ({
                     </span>
                   </td>
 
-                  {/* Last Activity */}
+                  {/* Last Activity + Revision count */}
                   <td className="px-4 py-3.5 text-right text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                    {formatActivityDate(prob.updatedAt || prob.dateAdded)}
+                    <div className="flex flex-col items-end gap-1">
+                      <span>{formatActivityDate(prob.updatedAt || prob.dateAdded)}</span>
+                      {(prob.repetitionCount ?? 0) > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-semibold rounded-md border border-indigo-200 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800"
+                          title={`${prob.repetitionCount} revision${prob.repetitionCount === 1 ? '' : 's'} completed`}
+                        >
+                          <RotateCcw className="w-2.5 h-2.5" />
+                          {prob.repetitionCount}{' '}
+                          {prob.repetitionCount === 1 ? 'revision' : 'revisions'}
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

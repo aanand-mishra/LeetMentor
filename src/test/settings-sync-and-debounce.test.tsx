@@ -28,7 +28,7 @@ describe('Settings sync, temperature debounce, and logo verification', () => {
       </MemoryRouter>
     );
 
-    const logoImg = screen.getByAltText('Leetcode DSA Tracker');
+    const logoImg = screen.getByAltText('LeetMentor');
     expect(logoImg).toBeInTheDocument();
     expect(logoImg).toHaveAttribute('src', '/favicon.svg');
   });

@@ -59,7 +59,7 @@ export async function exportDatabaseToJson(): Promise<string> {
 export async function triggerExportDownload(): Promise<void> {
   const json = await exportDatabaseToJson();
   const dateStr = new Date().toISOString().split('T')[0];
-  const filename = `dsa-tracker-export-${dateStr}.json`;
+  const filename = `leetmentor-export-${dateStr}.json`;
 
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);

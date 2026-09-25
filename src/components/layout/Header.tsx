@@ -34,10 +34,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenShortcuts }) => {
           >
             <img
               src="/favicon.svg"
-              alt="Leetcode DSA Tracker"
+              alt="LeetMentor"
               className="w-7 h-7 rounded-lg shadow-xs object-contain ring-1 ring-slate-200 dark:ring-slate-800 group-hover:scale-105 transition-transform"
             />
-            <span className="text-base tracking-tight font-semibold">Leetcode DSA Tracker</span>
+            <span className="text-base tracking-tight font-semibold">LeetMentor</span>
           </Link>
 
           {isSubPage && (

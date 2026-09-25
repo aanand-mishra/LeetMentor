@@ -19,7 +19,7 @@ import {
   sortByReviewUrgency,
 } from '../utils/reviewScheduler';
 
-class DSATrackerDB extends Dexie {
+class LeetMentorDB extends Dexie {
   problems!: Table<Problem, string>;
   attempts!: Table<Attempt, string>;
   mentorMessages!: Table<MentorMessage, string>;
@@ -28,6 +28,12 @@ class DSATrackerDB extends Dexie {
   settings!: Table<Settings, string>;
 
   constructor() {
+    // DO NOT RENAME. This is the product's pre-LeetMentor name, but it is the
+    // physical IndexedDB key holding every user's problems, attempts, notes,
+    // revisions, settings and Gemini API key. Renaming it opens a fresh empty
+    // database and silently makes all existing data unreachable.
+    // The product was renamed to LeetMentor; this identifier was intentionally
+    // kept for backwards compatibility. See README "Legacy identifiers".
     super('dsa-tracker');
     this.version(1).stores({
       problems:
@@ -50,7 +56,7 @@ class DSATrackerDB extends Dexie {
   }
 }
 
-export const db = new DSATrackerDB();
+export const db = new LeetMentorDB();
 
 // Helper to get today's date in YYYY-MM-DD
 function getTodayDateString(): string {

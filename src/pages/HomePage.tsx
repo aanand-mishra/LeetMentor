@@ -7,7 +7,7 @@ import { ProblemTable } from '../components/home/ProblemTable';
 import { WelcomeGuideBanner } from '../components/home/WelcomeGuideBanner';
 import { ZeroProblemsEmptyState, NoFilterMatchesEmptyState } from '../components/home/EmptyStates';
 import { useUrlFilters } from '../hooks/useUrlFilters';
-import type { Status, Difficulty } from '../types';
+import type { Difficulty } from '../types';
 import { getProblemReviewStatus, isProblemOverdue } from '../utils/reviewScheduler';
 
 export const HomePage: React.FC = () => {
@@ -126,13 +126,7 @@ export const HomePage: React.FC = () => {
       {hasAnyProblems && (
         <SummaryBar
           problems={allProblems}
-          activeStatusFilter={filters.status}
           activeDifficultyFilter={filters.difficulty}
-          onSelectStatus={(st: Status) => {
-            const current = filters.status || [];
-            const next = current.includes(st) ? current.filter((s) => s !== st) : [...current, st];
-            setFilters({ status: next });
-          }}
           onSelectDifficulty={(diff: Difficulty) => {
             const current = filters.difficulty || [];
             const next = current.includes(diff)

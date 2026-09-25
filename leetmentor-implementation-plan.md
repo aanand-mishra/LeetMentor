@@ -1,6 +1,6 @@
-# Implementation Plan — Leetcode DSA Tracker
+# Implementation Plan — LeetMentor
 
-**Companion to:** `leetcode-dsa-tracker-spec.md` (v1.0)
+**Companion to:** `leetmentor-spec.md` (v1.0)
 **Audience:** the AI coding agent executing this build
 **Purpose:** a single, ordered, checkable TODO list that produces the complete product with nothing skipped.
 
@@ -8,7 +8,7 @@
 
 ## How to use this document
 
-1. **Work phases in order, top to bottom.** Do not start Phase *N* until every box in Phase *N−1* is checked, unless a task is explicitly marked `[parallel-ok]`.
+1. **Work phases in order, top to bottom.** Do not start Phase _N_ until every box in Phase _N−1_ is checked, unless a task is explicitly marked `[parallel-ok]`.
 2. **Check a box only when its acceptance condition is actually verified** (built, tested, and behaving as specified) — not merely when code has been written for it.
 3. **Every task cites its source section** in the spec, like `(§6 FR-2.3)`. If behavior is unclear, re-read that section before improvising.
 4. **If a task is blocked** (e.g., no Gemini key available yet, a dependency unavailable), leave the box unchecked and add a note directly beneath it: `<!-- BLOCKED: reason -->`. Keep moving through non-dependent tasks; return to it later.
@@ -20,27 +20,27 @@
 
 ## Progress Overview
 
-| Phase | Name | Status |
-|---|---|---|
-| 0 | Project Setup & Scaffolding | ☑ Done |
-| 1 | Data Layer | ☑ Done |
-| 2 | App Shell & Routing | ☑ Done |
-| 3 | Problem CRUD | ☑ Done |
-| 4 | Home Page | ☑ Done |
-| 5 | Problem Detail Shell | ☑ Done |
-| 6 | Attempts & Code Review Loop | ☑ Done |
-| 7 | AI Mentor | ☑ Done |
-| 8 | Notes & Notes Review | ☑ Done |
-| 9 | Confidence & Status Logic | ☑ Done |
-| 10 | Settings | ☑ Done |
-| 11 | Gemini API Integration Layer | ☑ Done |
-| 12 | Non-Functional Requirements | ☑ Done |
-| 13 | Design Pass | ☑ Done |
-| 14 | Deliverables & Docs | ☑ Done |
-| 15 | Full Acceptance Verification | ☑ Done |
-| 16 | Open Decisions Sign-off | ☑ Done |
+| Phase | Name                         | Status |
+| ----- | ---------------------------- | ------ |
+| 0     | Project Setup & Scaffolding  | ☑ Done |
+| 1     | Data Layer                   | ☑ Done |
+| 2     | App Shell & Routing          | ☑ Done |
+| 3     | Problem CRUD                 | ☑ Done |
+| 4     | Home Page                    | ☑ Done |
+| 5     | Problem Detail Shell         | ☑ Done |
+| 6     | Attempts & Code Review Loop  | ☑ Done |
+| 7     | AI Mentor                    | ☑ Done |
+| 8     | Notes & Notes Review         | ☑ Done |
+| 9     | Confidence & Status Logic    | ☑ Done |
+| 10    | Settings                     | ☑ Done |
+| 11    | Gemini API Integration Layer | ☑ Done |
+| 12    | Non-Functional Requirements  | ☑ Done |
+| 13    | Design Pass                  | ☑ Done |
+| 14    | Deliverables & Docs          | ☑ Done |
+| 15    | Full Acceptance Verification | ☑ Done |
+| 16    | Open Decisions Sign-off      | ☑ Done |
 
-*(Update this table's status column as `Not started` → `In progress` → `Done` as you complete each phase.)*
+_(Update this table's status column as `Not started` → `In progress` → `Done` as you complete each phase.)_
 
 ---
 
@@ -68,6 +68,7 @@
 
 - [x] Define all TypeScript types exactly as specified in §5.2: `Difficulty`, `Status`, `Problem`, `Attempt`, `CodeReview`, `MentorMessage`, `NoteReview`, `Settings`. Do not rename or drop fields.
 - [x] Create the Dexie database class named `dsa-tracker`, schema version 1, with the exact table/index definition from §5.1 (including the `*topics` multi-entry index).
+  - **Note (post-LeetMentor rename):** the DB name `dsa-tracker` was deliberately _not_ renamed to `leetmentor`. It is the physical IndexedDB key to existing user data (including the Gemini API key); changing it orphans that data. Only the Dexie _class_ was renamed (`DSATrackerDB` → `LeetMentorDB`).
 - [x] Build a typed repository/service module per table:
   - [x] `problems`: create, update, delete (with cascade to attempts/mentorMessages/noteReviews), getById, list (accepting search/filter/sort params).
   - [x] `attempts`: create (auto-incrementing `attemptNumber` per problem, immutable after creation), attachReview, listForProblem.
@@ -174,7 +175,7 @@
 ## Phase 7 — AI Mentor (§6 FR-5, §7.6)
 
 - [x] Build the four gated hint cards — Nudge, Pattern, Pseudocode, Solution — exactly per the FR-5.1 table.
-- [x] Implement gating: level *N* is locked and visually greyed with a lock icon until level *N−1* is unlocked; unlocking requires an explicit click (FR-5.2).
+- [x] Implement gating: level _N_ is locked and visually greyed with a lock icon until level _N−1_ is unlocked; unlocking requires an explicit click (FR-5.2).
 - [x] Add the Level 4 confirmation dialog with the exact copy from FR-5.2, defaulting focus to "Not yet, let me try again."
 - [x] Persist unlocked content into `mentorMessages`; on revisit, render from IndexedDB with **no** network call.
 - [x] On unlock, set `problem.hintsUsed = max(hintsUsed, level)` and update the header's filled-dot indicator live, without a page reload.
@@ -223,10 +224,10 @@
 - [x] Build the API key field: password-type input, show/hide toggle, "Test connection" button (real minimal call to Gemini — this can and should hit the live API), "Clear key" action (FR-8.1).
 - [x] Add the exact, always-visible security notice text from FR-8.2 — do not paraphrase it.
 - [x] Build the model selector: fetch `GET /v1beta/models` at runtime, filter to `generateContent`-capable models, default-select a Flash-class model, and fall back to a free-text input with a documentation link if the fetch fails (FR-8.3).
-- [x] Explicitly confirm no model ID is hardcoded as the *only* option anywhere in the codebase.
+- [x] Explicitly confirm no model ID is hardcoded as the _only_ option anywhere in the codebase.
 - [x] Build remaining settings: default language, theme (already wired in Phase 2 — confirm it's exposed here), temperature slider (0.0–1.0, default 0.4) (FR-8.4).
 - [x] Build the local usage counter with its disclaimer text (FR-8.5).
-- [x] Build Export: downloads `dsa-tracker-export-YYYY-MM-DD.json` with all four tables plus `schemaVersion`; **explicitly strip `geminiApiKey`** before serializing (FR-8.6).
+- [x] Build Export: downloads `leetmentor-export-YYYY-MM-DD.json` with all four tables plus `schemaVersion`; **explicitly strip `geminiApiKey`** before serializing (FR-8.6).
 - [x] Build Import: file picker → validate `schemaVersion` → preview record counts → Merge (skip existing IDs) or Replace (typed confirmation, wipes first) (FR-8.6).
 - [x] Build the Danger Zone "Delete all data" flow behind a typed `DELETE` confirmation (FR-8.7).
 - [x] Write tests against FR-8 acceptance criteria:
@@ -313,12 +314,14 @@ This phase replaces every mocked AI call from Phases 6–8 with the real integra
 Re-walk every acceptance criterion from the spec in one pass, end to end, on the finished build (not per-phase mocks). Check each independently:
 
 **FR-1**
+
 - [x] Create with only title + difficulty succeeds.
 - [x] Empty title blocks submission, no DB write.
 - [x] Duplicate number shows non-blocking warning with working link.
 - [x] Delete cascades to all attempts.
 
 **FR-2**
+
 - [x] Multi-token search returns correct AND intersection.
 - [x] Combined filters (Difficulty + Status) return correct intersection.
 - [x] Filtered URL reproduces identical view in a new tab.
@@ -326,28 +329,33 @@ Re-walk every acceptance criterion from the spec in one pass, end to end, on the
 - [x] Search stays responsive at 2,000 rows.
 
 **FR-4**
+
 - [x] Later attempts never mutate earlier attempt records.
 - [x] `revise` verdict renders all issues sorted by severity.
 - [x] "Fix and resubmit" pre-fills exact previous code.
 - [x] Reviews persist across reload.
 
 **FR-5**
+
 - [x] Level gating enforced with disabled + tooltip.
 - [x] Unlocked content loads with zero network calls on revisit.
 - [x] `hintsUsed` and header indicator update live.
 - [x] Level 4 dialog defaults focus to Cancel.
 
 **FR-6**
+
 - [x] Notes persist without explicit save.
 - [x] Review button disabled under 50 characters.
 - [x] Multiple reviews retained as separate history entries.
 
 **FR-8**
+
 - [x] Exported JSON never contains the API key.
 - [x] Export→Replace-import round-trips exactly.
 - [x] Invalid-key test surfaces Google's real error text.
 
 **Cross-cutting**
+
 - [x] All NFR-1 through NFR-10 items from Phase 12 re-confirmed on the final build.
 - [x] All three real Gemini calls (mentor, code review, notes review) verified live end-to-end in one uninterrupted user session (create problem → get hints → submit attempt → get reviewed → pass → write notes → get notes reviewed).
 
@@ -372,11 +380,11 @@ These were inferred defaults, not explicit requirements. Confirm each is accepta
 
 ## Deviations Log
 
-*(The agent records here any point where the spec could not be followed exactly, what was done instead, and why. Leave empty if none.)*
+_(The agent records here any point where the spec could not be followed exactly, what was done instead, and why. Leave empty if none.)_
 
-| Section | Spec said | What was built instead | Why |
-|---|---|---|---|
-| None | - | - | All requirements strictly adhered to. |
+| Section | Spec said | What was built instead | Why                                   |
+| ------- | --------- | ---------------------- | ------------------------------------- |
+| None    | -         | -                      | All requirements strictly adhered to. |
 
 ---
 

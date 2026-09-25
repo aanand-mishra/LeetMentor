@@ -1,6 +1,6 @@
-# Leetcode DSA Tracker with AI Mentor
+# LeetMentor
 
-> A local-first, single-user web application for tracking Leetcode DSA practice, featuring an AI mentor powered by the Google Gemini API (free tier).
+> **LeetMentor** — a local-first Leetcode AI mentor and DSA practice tracker, powered by the Google Gemini API (free tier).
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue.svg)](https://www.typescriptlang.org/)
 [![React 18](https://img.shields.io/badge/React-18-61dafb.svg)](https://react.dev/)
@@ -37,7 +37,7 @@ Spreadsheets track dates and links, but they cannot guide your thinking or revie
 
 ### Core Architectural Principles
 
-- **Local-First:** All user data (problems, attempts, reviews, notes, hints) lives inside browser **IndexedDB** (`dsa-tracker` db v1) via Dexie.js. No backend, no accounts, and no sync server.
+- **Local-First:** All user data (problems, attempts, reviews, notes, hints) lives inside browser **IndexedDB** (the legacy-named `dsa-tracker` db — see [Legacy Identifiers](#legacy-identifiers-intentionally-not-renamed)) via Dexie.js. No backend, no accounts, and no sync server.
 - **Works Offline:** Every feature except the three AI features works with zero network connection.
 - **Zero Fabricated Data:** Problem details and statements are manually entered or pasted by the user — or auto-filled from the bundled offline LeetCode catalog (see below).
 - **Privacy & Security:** Zero analytics, zero telemetry, and zero third-party CDN scripts.
@@ -71,8 +71,8 @@ Each problem's **Notes** tab has a **Dictate** button next to the character coun
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/username/Leetcode-Tracker.git
-cd Leetcode-Tracker
+git clone https://github.com/aanand-mishra/LeetMentor.git
+cd LeetMentor
 
 # 2. Install dependencies
 npm install
@@ -109,7 +109,7 @@ The application calls Google's Generative Language API directly from your browse
 3. In the left navigation or top bar, click **"Get API key"** (or **"Create API key"**).
 4. Click **"Create API key in new project"** (or choose an existing Google Cloud project).
 5. Copy your newly created API key string.
-6. Open **Leetcode Tracker**, navigate to **Settings** (`/settings` or click the gear icon in the top header).
+6. Open **LeetMentor**, navigate to **Settings** (`/settings` or click the gear icon in the top header).
 7. Paste the key into the **Google Gemini API Key** input.
 8. Click **"Test connection"**. The app executes a minimal ping to verify connectivity.
 9. The **Active Gemini Model** dropdown will dynamically populate with models supporting `generateContent` (e.g., `gemini-1.5-flash`, `gemini-2.0-flash`, `gemini-flash-lite-latest`). Flash-class models are selected by default to maximize free-tier limits.
@@ -130,13 +130,28 @@ The application calls Google's Generative Language API directly from your browse
 
 ### IndexedDB Storage
 
-Unlike `localStorage` (which is synchronous, blocks the main thread, and is capped at ~5MB), Leetcode Tracker uses **IndexedDB** via **Dexie.js**. This enables storing thousands of code attempts, comprehensive markdown notes, and AI critique history without hitting storage walls.
+Unlike `localStorage` (which is synchronous, blocks the main thread, and is capped at ~5MB), LeetMentor uses **IndexedDB** via **Dexie.js**. This enables storing thousands of code attempts, comprehensive markdown notes, and AI critique history without hitting storage walls.
+
+### Legacy Identifiers (intentionally not renamed)
+
+This project was renamed from _Leetcode DSA Tracker_ to **LeetMentor**. A few internal
+identifiers kept their old names on purpose, because they are **keys to data that already
+exists in users' browsers**. Changing them would silently orphan that data.
+
+| Identifier                                                                          | Where                                                                     | Why it stays                                                                                                                                                               |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dsa-tracker`                                                                       | `src/db/index.ts` (Dexie `super()`)                                       | The physical IndexedDB database name. Renaming it opens an empty DB and makes every existing problem, attempt, note, revision, setting and **Gemini API key** unreachable. |
+| `dsa_welcome_banner_dismissed`                                                      | `src/db/index.ts`, `src/pages/HomePage.tsx`, `src/pages/SettingsPage.tsx` | Renaming re-shows the Quick Start Guide to every existing user.                                                                                                            |
+| `dsa_first_run_seen`, `dsa_durability_dismissed_until`, `dsa_last_export_timestamp` | `src/components/layout/DataDurabilityBanner.tsx`                          | Same: purely UI dismissal state, not worth a one-time banner re-shuffle for users.                                                                                         |
+
+If you ever _do_ want to migrate the database name, it needs a real data-migration step
+(open the old DB, copy every table into a new one, then delete the old) — not a string edit.
 
 ### Backups (Export & Import)
 
 Navigate to **Settings** (`/settings`) to manage your data:
 
-- **Export Backup:** Downloads a single JSON file named `dsa-tracker-export-YYYY-MM-DD.json`.
+- **Export Backup:** Downloads a single JSON file named `leetmentor-export-YYYY-MM-DD.json`.
   - **Security Guarantee:** The `geminiApiKey` is **strictly stripped** before serialization. Your API key is never exported.
 - **Import Backup:** Select any previously exported JSON backup.
   - **Merge Mode:** Skips records whose IDs already exist in your local database; imports non-conflicting items.

@@ -43,7 +43,7 @@ export const WelcomeGuideBanner: React.FC<WelcomeGuideBannerProps> = ({ onDismis
       {/* Platform Intro */}
       <div className="mt-3">
         <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-          Welcome to Leetcode DSA Tracker
+          Welcome to LeetMentor
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-3xl leading-relaxed">
           Your private algorithm practice coach. Practice problems, analyze complexity, and unlock
