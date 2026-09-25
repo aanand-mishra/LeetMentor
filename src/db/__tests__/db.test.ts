@@ -481,7 +481,7 @@ describe('Data Layer & Repositories', () => {
         notes: '',
         language: 'python',
         dateFirstAttempt: null,
-        dateSolved: new Date().toISOString(),
+        dateSolved: new Date(Date.now() - 10 * 86400000).toISOString(),
       });
 
       // Problem B: In Progress (not solved -> not in review queue)

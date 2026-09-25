@@ -1,4 +1,5 @@
 import Dexie, { type Table } from 'dexie';
+import { differenceInCalendarDays, parseISO, startOfDay } from 'date-fns';
 import type {
   Problem,
   Attempt,
@@ -110,6 +111,7 @@ export const problemsRepo = {
       }
     }
 
+    const problemId = generateUuid();
     let nextReviewDate = data.nextReviewDate;
     let reviewIntervalDays = data.reviewIntervalDays;
     let reviewStage = data.reviewStage;
@@ -126,6 +128,7 @@ export const problemsRepo = {
         previousEaseFactor: data.easeFactor,
         previousRepetitionCount: data.repetitionCount ?? 0,
         baseDate: dateSolved || now,
+        problemId,
       });
       nextReviewDate = data.nextReviewDate || schedule.nextReviewDate;
       reviewIntervalDays = data.reviewIntervalDays ?? schedule.intervalDays;
@@ -150,7 +153,7 @@ export const problemsRepo = {
       userSpaceComplexity: null,
       ...data,
       hintsUsed: data.hintsUsed || 0,
-      id: generateUuid(),
+      id: problemId,
       title: data.title.trim(),
       status,
       manuallyMarkedSolved,
@@ -226,6 +229,7 @@ export const problemsRepo = {
           previousEaseFactor: updated.easeFactor,
           previousRepetitionCount: updated.repetitionCount ?? 0,
           baseDate: updated.dateSolved || existing.dateSolved || new Date().toISOString(),
+          problemId: id,
         });
         updated.nextReviewDate = schedule.nextReviewDate;
         updated.reviewIntervalDays = schedule.intervalDays;
@@ -264,6 +268,11 @@ export const problemsRepo = {
     const attemptsCount = await db.attempts.where('problemId').equals(id).count();
     const now = new Date().toISOString();
 
+    const lastReviewDateStr = existing.lastReviewedAt || existing.dateSolved;
+    const elapsedDays = lastReviewDateStr
+      ? differenceInCalendarDays(startOfDay(parseISO(now)), startOfDay(parseISO(lastReviewDateStr)))
+      : undefined;
+
     const schedule = calculateNextReview({
       difficulty: existing.difficulty,
       confidence: data.confidence,
@@ -275,6 +284,8 @@ export const problemsRepo = {
       previousRepetitionCount: existing.repetitionCount ?? 0,
       isReviewSession: true,
       baseDate: now,
+      problemId: id,
+      elapsedDaysSinceLastReview: elapsedDays,
     });
 
     const updated: Problem = {

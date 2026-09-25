@@ -166,6 +166,8 @@ export interface ReviewFactorBreakdown {
   timeMultiplier: number;
   timeSpentMinutes: number | null;
   explanations: string[];
+  intrinsicDifficulty?: number;
+  stabilityDays?: number;
 }
 
 export interface ReviewScheduleResult {
@@ -189,6 +191,10 @@ export interface ReviewScheduleParams {
   previousRepetitionCount?: number;
   baseDate?: string | Date;
   isReviewSession?: boolean;
+  problemId?: string;
+  elapsedDaysSinceLastReview?: number;
+  noteReviewRating?: number;
+  noteReviewVerdict?: 'solid' | 'needs_work';
 }
 
 export interface ProblemFilterParams {

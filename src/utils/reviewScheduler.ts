@@ -9,15 +9,15 @@ import type {
 } from '../types';
 
 // ============================================================================
-// CONSTANTS & CONFIGURATION
+// CONSTANTS & CONFIGURATION (DSA-FSRS: Adaptive Schema Stability Engine)
 // ============================================================================
 
 export const CONFIDENCE_BASE_DAYS: Record<1 | 2 | 3 | 4 | 5, number> = {
-  1: 2, // Lost: 2 days (gives overnight consolidation without letting schema dissolve)
-  2: 4, // Shaky: 4 days
-  3: 7, // Okay: 7 days (~1 week)
-  4: 14, // Solid: 14 days (~2 weeks)
-  5: 28, // Fluent: 28 days (~4 weeks)
+  1: 4, // Lost: 4 days (gives overnight consolidation and space to reconstruct schema from scratch)
+  2: 7, // Shaky: 7 days (~1 week)
+  3: 12, // Okay: 12 days (~1.7 weeks)
+  4: 21, // Solid: 21 days (~3 weeks)
+  5: 35, // Fluent: 35 days (~5 weeks)
 };
 
 export const CONFIDENCE_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
@@ -37,7 +37,7 @@ export const MENTOR_HINT_MULTIPLIERS: Record<0 | 1 | 2 | 3 | 4, number> = {
 };
 
 export const DIFFICULTY_MULTIPLIERS: Record<Difficulty, number> = {
-  Easy: 1.2, // +20% bonus (idiomatic patterns stick longer)
+  Easy: 1.25, // +25% bonus (idiomatic patterns stick longer)
   Medium: 1.0, // Baseline
   Hard: 0.75, // -25% penalty (subtle invariants decay faster)
 };
@@ -50,14 +50,115 @@ export const EXPECTED_TIME_MINUTES: Record<Difficulty, number> = {
 
 export const DEFAULT_EASE_FACTOR = 2.2;
 export const MIN_EASE_FACTOR = 1.3;
-export const MAX_EASE_FACTOR = 3.0;
+export const MAX_EASE_FACTOR = 3.2;
 
-export const MIN_INITIAL_DAYS = 2; // Never schedule for tomorrow morning: avoids simple rote recall
-export const MAX_INITIAL_DAYS = 35; // Maximum initial gap
+export const MIN_INITIAL_DAYS = 3; // Never schedule for tomorrow or 2 days: prevents simple rote echo
+export const MAX_INITIAL_DAYS = 45; // Maximum initial gap
 export const MAX_REVIEW_DAYS = 180; // Mastered ceiling
 
 // ============================================================================
-// MULTIPLIER HELPERS
+// WORKLOAD PACING & ANTI-CLUMPING (DETERMINISTIC JITTER)
+// ============================================================================
+
+/**
+ * Computes a small deterministic pseudo-random jitter in [-0.07, +0.07] based on problemId
+ * to spread review dates across adjacent weekdays and avoid review clumping/spikes.
+ */
+export function getDeterministicJitter(id?: string): number {
+  if (!id) return 0;
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  const normalized = ((Math.abs(hash) % 1000) / 1000) * 0.14 - 0.07;
+  return Number(normalized.toFixed(4));
+}
+
+// ============================================================================
+// INTRINSIC DIFFICULTY ENGINE (D in [1.0, 9.0])
+// ============================================================================
+
+export function calculateIntrinsicDifficulty(params: {
+  difficulty: Difficulty;
+  confidence: 1 | 2 | 3 | 4 | 5;
+  hintsUsed: 0 | 1 | 2 | 3 | 4;
+  attemptsCount?: number;
+  timeSpentMinutes?: number | null;
+  noteReviewVerdict?: 'solid' | 'needs_work';
+  noteReviewRating?: number;
+}): { difficultyIndex: number; difficultyExpl: string } {
+  const {
+    difficulty,
+    confidence,
+    hintsUsed,
+    attemptsCount = 1,
+    timeSpentMinutes,
+    noteReviewVerdict,
+    noteReviewRating,
+  } = params;
+
+  // Base difficulty
+  const baseD: Record<Difficulty, number> = {
+    Easy: 3.0,
+    Medium: 5.0,
+    Hard: 7.2,
+  };
+  let d = baseD[difficulty];
+
+  // Confidence delta
+  const confDelta: Record<1 | 2 | 3 | 4 | 5, number> = {
+    1: 2.2,
+    2: 1.4,
+    3: 0.4,
+    4: -0.6,
+    5: -1.6,
+  };
+  d += confDelta[confidence];
+
+  // Hints delta
+  const hintDelta: Record<0 | 1 | 2 | 3 | 4, number> = {
+    0: -0.6, // unassisted
+    1: 0.0, // nudge
+    2: 0.8, // approach
+    3: 1.5, // pseudocode
+    4: 2.0, // solution
+  };
+  d += hintDelta[hintsUsed];
+
+  // Attempts delta
+  if (attemptsCount <= 1) {
+    d -= 0.4;
+  } else if (attemptsCount >= 6) {
+    d += 1.0;
+  } else if (attemptsCount >= 4) {
+    d += 0.5;
+  }
+
+  // Time spent delta
+  if (timeSpentMinutes !== null && timeSpentMinutes !== undefined && timeSpentMinutes > 0) {
+    const benchmark = EXPECTED_TIME_MINUTES[difficulty];
+    const ratio = timeSpentMinutes / benchmark;
+    if (ratio <= 0.65) d -= 0.5;
+    else if (ratio > 2.0) d += 0.8;
+    else if (ratio > 1.3) d += 0.4;
+  }
+
+  // Note review quality delta
+  if (noteReviewVerdict === 'solid' && (noteReviewRating ?? 0) >= 4) {
+    d -= 0.4;
+  } else if (noteReviewVerdict === 'needs_work') {
+    d += 0.4;
+  }
+
+  const difficultyIndex = Number(Math.max(1.0, Math.min(9.0, d)).toFixed(2));
+  const difficultyExpl = `Intrinsic Difficulty Index: ${difficultyIndex}/9.0 (${difficulty}, ${CONFIDENCE_LABELS[confidence]})`;
+
+  return { difficultyIndex, difficultyExpl };
+}
+
+// ============================================================================
+// MULTIPLIER HELPERS (Backward compatibility & UI breakdowns)
 // ============================================================================
 
 export function getAttemptMultiplier(attemptsCount: number): {
@@ -90,7 +191,7 @@ export function getTimeMultiplier(
   const benchmark = EXPECTED_TIME_MINUTES[difficulty];
   const ratio = timeSpentMinutes / benchmark;
 
-  if (ratio <= 0.6) {
+  if (ratio <= 0.65) {
     return {
       multiplier: 1.15,
       explanation: `Fast solve (${timeSpentMinutes}m vs ~${benchmark}m, +15% speed bonus)`,
@@ -115,11 +216,11 @@ export function getTimeMultiplier(
 }
 
 // ============================================================================
-// CORE CALCULATION ENGINE
+// CORE CALCULATION ENGINE (DSA-FSRS: Adaptive Schema Stability Engine)
 // ============================================================================
 
 /**
- * Calculates the next review date, interval, stage, and factor breakdown.
+ * Calculates next review date, interval, stage, easeFactor, and transparent factor breakdown.
  */
 export function calculateNextReview(params: ReviewScheduleParams): ReviewScheduleResult {
   const {
@@ -133,14 +234,16 @@ export function calculateNextReview(params: ReviewScheduleParams): ReviewSchedul
     previousRepetitionCount = 0,
     baseDate = new Date(),
     isReviewSession = false,
+    problemId,
+    elapsedDaysSinceLastReview,
+    noteReviewRating,
+    noteReviewVerdict,
   } = params;
 
   const baseDays = CONFIDENCE_BASE_DAYS[confidence];
   const confidenceLabel = CONFIDENCE_LABELS[confidence];
-
   const mentorMultiplier = MENTOR_HINT_MULTIPLIERS[hintsUsed];
   const difficultyMultiplier = DIFFICULTY_MULTIPLIERS[difficulty];
-
   const { multiplier: attemptMultiplier, explanation: attemptExpl } =
     getAttemptMultiplier(attemptsCount);
   const { multiplier: timeMultiplier, explanation: timeExpl } = getTimeMultiplier(
@@ -148,14 +251,22 @@ export function calculateNextReview(params: ReviewScheduleParams): ReviewSchedul
     timeSpentMinutes
   );
 
+  const { difficultyIndex, difficultyExpl } = calculateIntrinsicDifficulty({
+    difficulty,
+    confidence,
+    hintsUsed,
+    attemptsCount,
+    timeSpentMinutes,
+    noteReviewVerdict,
+    noteReviewRating,
+  });
+
   const explanations: string[] = [
     `Baseline for ${confidenceLabel}: ${baseDays} days`,
+    difficultyExpl,
     hintsUsed === 0
-      ? 'Unassisted solve (+15% bonus)'
+      ? 'Unassisted solve (+15% bonus: independent cognitive schema)'
       : `Used Level ${hintsUsed} mentor hints (${Math.round((mentorMultiplier - 1) * 100)}% adjustment)`,
-    difficulty === 'Medium'
-      ? 'Medium difficulty (standard baseline)'
-      : `${difficulty} difficulty (${Math.round((difficultyMultiplier - 1) * 100)}% adjustment)`,
     attemptExpl,
     timeExpl,
   ];
@@ -169,68 +280,93 @@ export function calculateNextReview(params: ReviewScheduleParams): ReviewSchedul
   const isReview = Boolean(
     isReviewSession || (previousRepetitionCount && previousRepetitionCount > 0)
   );
+  const jitter = getDeterministicJitter(problemId);
 
   // Branch A: Initial Solve (Repetition 0)
   if (!isReview) {
-    if (confidence === 1) {
-      intervalDays = MIN_INITIAL_DAYS; // Lost (1/5) is always 2 days: urgent check before schema dissolves
-    } else {
-      const rawDays =
-        baseDays * mentorMultiplier * difficultyMultiplier * attemptMultiplier * timeMultiplier;
-
-      intervalDays = Math.max(MIN_INITIAL_DAYS, Math.min(MAX_INITIAL_DAYS, Math.round(rawDays)));
-    }
+    const difficultyFactor = Math.pow(Math.max(0.1, (10 - difficultyIndex) / 5), 0.65);
+    const rawDays = baseDays * difficultyFactor * (1 + jitter);
+    intervalDays = Math.max(MIN_INITIAL_DAYS, Math.min(MAX_INITIAL_DAYS, Math.round(rawDays)));
     easeFactor = DEFAULT_EASE_FACTOR;
     repetitionCount = 0;
     stage = 'learning';
+
+    explanations.push(
+      `Initial memory stability established at ${intervalDays} days (difficulty factor: ${difficultyFactor.toFixed(2)})`
+    );
   } else {
-    // Branch B: Subsequent Review Rounds (Repetition 1, 2, 3...)
+    // Branch B: Subsequent Review Rounds
+    const prevInterval =
+      previousIntervalDays && previousIntervalDays > 0 ? previousIntervalDays : baseDays;
+
     if (confidence >= 3) {
-      // Successful recall: interval expands
-      const deltaEF = 0.1 - (5 - confidence) * (0.08 + (5 - confidence) * 0.02);
+      // Successful recall: interval expands smoothly
+      const hintFactor =
+        hintsUsed === 0
+          ? 1.15
+          : hintsUsed === 1
+            ? 1.0
+            : hintsUsed === 2
+              ? 0.75
+              : hintsUsed === 3
+                ? 0.5
+                : 0.35;
+
+      let lagFactor = 1.0;
+      if (
+        elapsedDaysSinceLastReview &&
+        elapsedDaysSinceLastReview > prevInterval &&
+        confidence >= 4
+      ) {
+        const overdueRatio = (elapsedDaysSinceLastReview - prevInterval) / prevInterval;
+        lagFactor = Math.min(1.3, 1.0 + 0.15 * overdueRatio);
+        explanations.push(
+          `Desirable difficulty bonus applied (+${Math.round((lagFactor - 1) * 100)}% for overdue recall)`
+        );
+      }
+
+      const difficultyTerm = Math.max(0.2, (10 - difficultyIndex) / 4);
+      const confidenceTerm = Math.pow(confidence - 2, 0.75); // C=3 => 1.0, C=4 => 1.68, C=5 => 2.28
+      const alpha = 0.42;
+
+      const expansionRate = alpha * difficultyTerm * confidenceTerm * hintFactor * lagFactor;
+      const multiplier = 1 + expansionRate;
+
+      const rawDays = prevInterval * multiplier * (1 + jitter);
+      intervalDays = Math.max(prevInterval + 1, Math.min(MAX_REVIEW_DAYS, Math.round(rawDays)));
+
       easeFactor = Math.max(
         MIN_EASE_FACTOR,
-        Math.min(MAX_EASE_FACTOR, previousEaseFactor + deltaEF)
+        Math.min(MAX_EASE_FACTOR, Number(multiplier.toFixed(2)))
       );
-
-      const confMultiplier = confidence === 5 ? 1.25 : confidence === 4 ? 1.0 : 0.85;
-      const prevInterval =
-        previousIntervalDays && previousIntervalDays > 0 ? previousIntervalDays : baseDays;
-
-      // When reviewing, mentor usage and difficulty continue to modulate interval expansion
-      const rawDays =
-        prevInterval *
-        easeFactor *
-        confMultiplier *
-        (hintsUsed === 0 ? 1.05 : mentorMultiplier) *
-        (difficulty === 'Hard' ? 0.9 : 1.0);
-
-      intervalDays = Math.max(MIN_INITIAL_DAYS + 1, Math.min(MAX_REVIEW_DAYS, Math.round(rawDays)));
-
       repetitionCount = (previousRepetitionCount || 0) + 1;
 
-      if (repetitionCount === 1) {
-        stage = 'reviewing';
-      } else if (repetitionCount === 2) {
-        stage = 'consolidated';
-      } else if (repetitionCount >= 3 && intervalDays >= 45) {
+      if (intervalDays >= 60 && repetitionCount >= 2) {
         stage = 'mastered';
-      } else {
+      } else if (intervalDays >= 25 && repetitionCount >= 2) {
         stage = 'consolidated';
+      } else if (intervalDays >= 10) {
+        stage = 'reviewing';
+      } else {
+        stage = 'learning';
       }
 
       explanations.push(
-        `Spaced repetition round ${repetitionCount}: expanded from ${prevInterval}d to ${intervalDays}d (EF: ${easeFactor.toFixed(2)})`
+        `Spaced repetition round ${repetitionCount}: expanded from ${prevInterval}d to ${intervalDays}d (${multiplier.toFixed(2)}x expansion)`
       );
     } else {
-      // Relapse (confidence 1 or 2): contract interval to restabilize concept
-      intervalDays = confidence === 1 ? MIN_INITIAL_DAYS : MIN_INITIAL_DAYS + 1;
-      easeFactor = Math.max(MIN_EASE_FACTOR, previousEaseFactor - 0.2);
-      repetitionCount = Math.max(0, previousRepetitionCount - 1);
-      stage = 'learning';
+      // Relapse (confidence 1 or 2): Soft-Landing Relapse
+      const beta = confidence === 2 ? 0.35 : 0.2;
+      const floorDays = confidence === 2 ? 5 : 3;
+      const rawRelapseDays = Math.max(floorDays, Math.round(prevInterval * beta));
+      intervalDays = Math.min(prevInterval, rawRelapseDays);
+
+      easeFactor = Math.max(MIN_EASE_FACTOR, previousEaseFactor - 0.25);
+      repetitionCount = Math.max(0, (previousRepetitionCount || 1) - 1);
+      stage = intervalDays >= 10 ? 'reviewing' : 'learning';
 
       explanations.push(
-        `Concept relapse detected (${confidenceLabel}): interval reset to ${intervalDays}d for rapid re-consolidation`
+        `Concept relapse detected (${confidenceLabel}): soft-landing interval set to ${intervalDays}d (preserved ${Math.round(beta * 100)}% of previous ${prevInterval}d stability)`
       );
     }
   }
@@ -251,11 +387,13 @@ export function calculateNextReview(params: ReviewScheduleParams): ReviewSchedul
     timeMultiplier,
     timeSpentMinutes,
     explanations,
+    intrinsicDifficulty: difficultyIndex,
+    stabilityDays: intervalDays,
   };
 
   const summaryExplanation =
     previousRepetitionCount > 0 && confidence < 3
-      ? `Concept relapse detected (${confidenceLabel}): interval reset to ${intervalDays} days for rapid re-consolidation.`
+      ? `Concept relapse detected (${confidenceLabel}): soft-landing interval set to ${intervalDays} days for targeted schema reconstruction.`
       : `Scheduled in ${intervalDays} days (${stage.toUpperCase()} stage) based on ${confidenceLabel}, ${difficulty} difficulty, and ${hintsUsed === 0 ? 'unassisted' : `${hintsUsed} hints`} solve.`;
 
   return {
@@ -328,6 +466,7 @@ export function getProblemReviewStatus(
       previousEaseFactor: problem.easeFactor,
       previousRepetitionCount: problem.repetitionCount,
       baseDate: problem.dateSolved || problem.updatedAt || problem.dateAdded,
+      problemId: problem.id,
     });
     nextReviewDateStr = computed.nextReviewDate;
     intervalDays = computed.intervalDays;
@@ -417,12 +556,13 @@ export function getProblemReviewStatus(
 
 /**
  * Returns whether a problem belongs in the active review queue:
- * Problem is Solved AND (is currently Due / Overdue OR has confidence <= 3).
+ * Strictly: Problem is Solved AND its scheduled review date is currently Due (or Overdue).
+ * Non-due problems are never forced into the queue prematurely.
  */
 export function isProblemInReviewQueue(problem: Problem, currentDate: Date = new Date()): boolean {
   if (problem.status !== 'Solved') return false;
   const status = getProblemReviewStatus(problem, 1, currentDate);
-  return status.isDue || (problem.confidence !== null && problem.confidence <= 3);
+  return status.isDue;
 }
 
 /**

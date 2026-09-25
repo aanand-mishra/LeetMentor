@@ -6,16 +6,17 @@ import {
   isProblemInReviewQueue,
   isProblemOverdue,
   sortByReviewUrgency,
+  getDeterministicJitter,
   MIN_INITIAL_DAYS,
   MAX_INITIAL_DAYS,
 } from '../utils/reviewScheduler';
 import type { Problem } from '../types';
 
-describe('Intelligent Review Scheduler (DSA-SRS)', () => {
+describe('Intelligent Review Scheduler (DSA-FSRS)', () => {
   const baseDate = new Date('2026-09-21T12:00:00.000Z');
 
-  describe('Confidence Base Intervals', () => {
-    it('schedules Lost (1/5) with a safe minimum gap of 2 days (never 0 or 1)', () => {
+  describe('Confidence Base Stability Intervals', () => {
+    it('schedules Lost (1/5) with a safe minimum gap of 3 days (never 0, 1, or 2 to avoid rote echo)', () => {
       const result = calculateNextReview({
         difficulty: 'Medium',
         confidence: 1,
@@ -26,12 +27,12 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
       });
 
       expect(result.intervalDays).toBeGreaterThanOrEqual(MIN_INITIAL_DAYS);
-      expect(result.intervalDays).toBe(2);
+      expect(result.intervalDays).toBe(3);
       expect(result.stage).toBe('learning');
       expect(result.repetitionCount).toBe(0);
     });
 
-    it('schedules Shaky (2/5) around 4 days with moderate adjustments', () => {
+    it('schedules Shaky (2/5) around 7 days (~1 week) with moderate adjustments', () => {
       const result = calculateNextReview({
         difficulty: 'Medium',
         confidence: 2,
@@ -41,11 +42,11 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
         baseDate,
       });
 
-      // 4 * 1.15 (unassisted) * 1.0 (medium) * 1.1 (1st try) * 1.0 = ~5 days
-      expect(result.intervalDays).toBe(5);
+      expect(result.intervalDays).toBe(7);
+      expect(result.stage).toBe('learning');
     });
 
-    it('schedules Okay (3/5) around 1 week', () => {
+    it('schedules Okay (3/5) around 11-12 days (~1.7 weeks)', () => {
       const result = calculateNextReview({
         difficulty: 'Medium',
         confidence: 3,
@@ -55,12 +56,11 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
         baseDate,
       });
 
-      // 7 * 1.0 * 1.0 * 1.0 * 1.0 = 7 days
-      expect(result.intervalDays).toBe(7);
-      expect(result.summaryExplanation).toContain('7 days');
+      expect(result.intervalDays).toBe(11);
+      expect(result.summaryExplanation).toContain('11 days');
     });
 
-    it('schedules Solid (4/5) around 2 weeks', () => {
+    it('schedules Solid (4/5) around 3+ weeks (21-25 days)', () => {
       const result = calculateNextReview({
         difficulty: 'Medium',
         confidence: 4,
@@ -70,11 +70,10 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
         baseDate,
       });
 
-      // 14 * 1.15 * 1.0 * 1.1 = 17.7 -> 18 days
-      expect(result.intervalDays).toBe(18);
+      expect(result.intervalDays).toBe(25);
     });
 
-    it('schedules Fluent (5/5) with generous space (28-35 days) for new problem focus', () => {
+    it('schedules Fluent (5/5) with generous space (35-45 days) for new problem focus', () => {
       const result = calculateNextReview({
         difficulty: 'Easy',
         confidence: 5,
@@ -84,7 +83,6 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
         baseDate,
       });
 
-      // 28 * 1.15 * 1.2 * 1.1 * 1.15 = 48 -> clamped to MAX_INITIAL_DAYS (35)
       expect(result.intervalDays).toBe(MAX_INITIAL_DAYS);
       expect(result.intervalDays).toBeLessThanOrEqual(MAX_INITIAL_DAYS);
     });
@@ -171,7 +169,7 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
     });
   });
 
-  describe('Spaced Repetition Progression & Relapse Handling', () => {
+  describe('Spaced Repetition Progression & Soft-Landing Relapse', () => {
     it('expands interval on successful review (confidence >= 3) and advances stage', () => {
       // Repetition 0 -> Repetition 1
       const review1 = calculateNextReview({
@@ -180,14 +178,14 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
         hintsUsed: 0,
         timeSpentMinutes: 20,
         attemptsCount: 1,
-        previousIntervalDays: 7,
+        previousIntervalDays: 14,
         previousEaseFactor: 2.2,
         previousRepetitionCount: 1,
         baseDate,
       });
 
       expect(review1.repetitionCount).toBe(2);
-      expect(review1.intervalDays).toBeGreaterThan(7);
+      expect(review1.intervalDays).toBeGreaterThan(14);
       expect(review1.stage).toBe('consolidated');
 
       // Repetition 2 -> Repetition 3 (High interval -> Mastered)
@@ -208,22 +206,67 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
       expect(review2.stage).toBe('mastered');
     });
 
-    it('contracts interval to 2-3 days and resets stage on relapse (confidence < 3)', () => {
+    it('provides soft-landing on relapse instead of brutal 2-day reset cliff', () => {
       const relapse = calculateNextReview({
         difficulty: 'Medium',
         confidence: 2, // Shaky relapse
         hintsUsed: 2,
         timeSpentMinutes: 40,
-        previousIntervalDays: 25,
+        previousIntervalDays: 30,
         previousEaseFactor: 2.4,
         previousRepetitionCount: 2,
         baseDate,
       });
 
-      expect(relapse.intervalDays).toBeLessThanOrEqual(3);
-      expect(relapse.stage).toBe('learning');
+      // Preserves 35% of previous stability (~10-11 days) rather than resetting to 2 days
+      expect(relapse.intervalDays).toBeGreaterThanOrEqual(5);
+      expect(relapse.intervalDays).toBeLessThan(30);
+      expect(relapse.intervalDays).toBe(11);
       expect(relapse.repetitionCount).toBe(1);
       expect(relapse.summaryExplanation).toContain('relapse');
+    });
+  });
+
+  describe('Desirable Difficulty & Overdue Recall Bonus', () => {
+    it('rewards overdue recall with increased expansion bonus', () => {
+      const onTimeReview = calculateNextReview({
+        difficulty: 'Medium',
+        confidence: 4,
+        hintsUsed: 0,
+        timeSpentMinutes: 25,
+        previousIntervalDays: 20,
+        previousRepetitionCount: 1,
+        baseDate,
+      });
+
+      const overdueReview = calculateNextReview({
+        difficulty: 'Medium',
+        confidence: 4,
+        hintsUsed: 0,
+        timeSpentMinutes: 25,
+        previousIntervalDays: 20,
+        previousRepetitionCount: 1,
+        elapsedDaysSinceLastReview: 35, // 15 days overdue
+        baseDate,
+      });
+
+      expect(overdueReview.intervalDays).toBeGreaterThan(onTimeReview.intervalDays);
+      expect(
+        overdueReview.factors.explanations.some((e) => e.includes('Desirable difficulty bonus'))
+      ).toBe(true);
+    });
+  });
+
+  describe('Anti-Clumping Deterministic Jitter', () => {
+    it('generates consistent deterministic jitter based on problemId', () => {
+      const jitter1 = getDeterministicJitter('p-101');
+      const jitter2 = getDeterministicJitter('p-101');
+      const jitter3 = getDeterministicJitter('p-202');
+
+      expect(jitter1).toBe(jitter2);
+      expect(jitter1).toBeGreaterThanOrEqual(-0.07);
+      expect(jitter1).toBeLessThanOrEqual(0.07);
+      expect(typeof jitter3).toBe('number');
     });
   });
 
@@ -246,14 +289,14 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
       userSpaceComplexity: null,
       notes: '',
       language: 'python',
-      dateAdded: subDays(baseDate, 15).toISOString(),
+      dateAdded: subDays(baseDate, 25).toISOString(),
       dateFirstAttempt: null,
-      dateSolved: subDays(baseDate, 15).toISOString(),
-      updatedAt: subDays(baseDate, 15).toISOString(),
+      dateSolved: subDays(baseDate, 25).toISOString(),
+      updatedAt: subDays(baseDate, 25).toISOString(),
     };
 
     it('detects when an existing solved problem is overdue based on past solve date', () => {
-      // Solved 15 days ago, Easy + Okay (3) initial interval ~11 days => now overdue by ~4 days
+      // Solved 25 days ago, Easy + Okay (3) initial interval ~16 days => now overdue by ~9 days
       const status = getProblemReviewStatus(mockProblem, 1, baseDate);
 
       expect(status.isScheduled).toBe(true);
@@ -291,11 +334,12 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
   });
 
   describe('Queue Inclusion & Urgency Sorting', () => {
-    it('includes solved problems in review queue if due or confidence <= 3', () => {
-      const solvedLowConf: Problem = {
-        id: 'p-1',
+    it('only includes problems in the review queue when their scheduled date is actually due', () => {
+      // Problem solved today with confidence 2 (scheduled 7 days in future) is NOT due today
+      const solvedFresh: Problem = {
+        id: 'p-fresh',
         number: 1,
-        title: 'Prob 1',
+        title: 'Prob Fresh',
         url: null,
         statement: '',
         difficulty: 'Medium',
@@ -314,9 +358,19 @@ describe('Intelligent Review Scheduler (DSA-SRS)', () => {
         dateFirstAttempt: null,
         dateSolved: baseDate.toISOString(),
         updatedAt: baseDate.toISOString(),
+        nextReviewDate: addDays(baseDate, 7).toISOString(),
+        reviewIntervalDays: 7,
       };
 
-      expect(isProblemInReviewQueue(solvedLowConf, baseDate)).toBe(true);
+      // Not due yet => should NOT clutter the review queue!
+      expect(isProblemInReviewQueue(solvedFresh, baseDate)).toBe(false);
+
+      // When its scheduled review date arrives:
+      const solvedDue: Problem = {
+        ...solvedFresh,
+        nextReviewDate: baseDate.toISOString(),
+      };
+      expect(isProblemInReviewQueue(solvedDue, baseDate)).toBe(true);
     });
 
     it('accurately identifies whether a problem is overdue', () => {
